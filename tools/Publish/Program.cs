@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 if (args.Length != 2) throw new ArgumentException("Usage: Publish <published wwwroot> <base path>");
 string root = Path.GetFullPath(args[0]);
@@ -26,4 +27,11 @@ foreach (JsonNode? node in assets)
         node["hash"] = "sha256-" + Convert.ToBase64String(SHA256.HashData(File.ReadAllBytes(indexPath)));
 json["version"] = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(assets.ToJsonString())))[..16];
 File.WriteAllText(manifestPath, "self.assetsManifest = " + json.ToJsonString() + ";\n", new UTF8Encoding(false));
+
+// Existing installations also need a changed worker and an uncached manifest URL.
+string workerPath = Path.Combine(root, "service-worker.js");
+string worker = File.ReadAllText(workerPath);
+Regex import = new(@"self\.importScripts\('\./service-worker-assets\.js(?:\?v=[a-f0-9]+)?'\);");
+if (!import.IsMatch(worker)) throw new InvalidDataException("The service worker manifest import is missing.");
+File.WriteAllText(workerPath, import.Replace(worker, $"self.importScripts('./service-worker-assets.js?v={json["version"]!.GetValue<string>()}');", 1), new UTF8Encoding(false));
 Console.WriteLine($"Prepared {basePath} with updated offline-cache integrity.");
