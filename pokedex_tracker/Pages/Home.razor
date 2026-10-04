@@ -1,0 +1,241 @@
+@page "/"
+@inject TrackerStore Store
+@implements IDisposable
+
+<PageTitle>Pokédex tracker</PageTitle>
+<header class="app-header">
+    <a class="brand" href="."><span class="brand-mark" aria-hidden="true"></span><span>Pokédex tracker<small>Your collection, one box at a time</small></span></a>
+    <label class="theme-control">Theme
+        <select aria-label="Theme" value="@Store.Theme" @onchange="ChangeTheme"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select>
+    </label>
+</header>
+
+@if (!Store.Ready)
+{
+    <main class="loading-state"><h1>Loading your Pokédexes</h1><p>@(startupError ?? "Your progress stays on this device until you sync a folder.")</p>
+        @if (startupError is not null) { <button onclick="location.reload()">Reload</button> }
+    </main>
+}
+else
+{
+    <div class="workspace">
+        <aside class="sidebar" aria-label="Your trackers">
+            <div class="sidebar-title"><h2>My trackers <span class="muted">@Store.VisibleTrackers.Count()</span></h2></div>
+            <button class="primary full-width" @onclick="NewTracker" disabled="@(Store.Busy || Store.EditingBlocked)">+ New tracker</button>
+            <nav class="tracker-list" aria-label="Select tracker">
+                @foreach (var tracker in Store.VisibleTrackers)
+                {
+                    var total = Store.Catalog.Dexes.SingleOrDefault(d => d.Id == tracker.State.DexId)?.Entries.Count ?? 0;
+                    <button class="tracker-item @(selectedId == tracker.State.Id ? "selected" : "")" aria-current="@(selectedId == tracker.State.Id ? "true" : null)" @onclick="() => Select(tracker.State.Id)">
+                        <strong>@tracker.State.Name</strong><span>@GameName(tracker.State.GameId) · @DexName(tracker.State.DexId)</span>
+                        <span class="tracker-count">@Store.CheckedCount(tracker) / @total @(tracker.Pending ? "· pending" : "")</span>
+                    </button>
+                }
+            </nav>
+            <section class="sync-panel" aria-labelledby="sync-title">
+                <h2 id="sync-title">Folder sync</h2>
+                @if (!Store.Capabilities.Folder)
+                {
+                    <p>This browser does not expose folder access. You can track locally and import or export backups.</p>
+                    <p class="muted">Brave may disable this API. Cloud sync is planned for a later release.</p>
+                }
+                else
+                {
+                    <p>@(Store.FolderName is null ? "Select a folder managed by Syncthing or your preferred sync tool." : $"Connected to {Store.FolderName}")</p>
+                    <div class="button-row">
+                        <button @onclick="Store.ChooseFolderAsync" disabled="@(Store.Busy || Store.EditingBlocked)">Choose folder</button>
+                        @if (Store.FolderName is null) { <button @onclick="Store.ReconnectAsync" disabled="@(Store.Busy || Store.EditingBlocked)">Reconnect</button> }
+                        else { <button class="primary" @onclick="Store.SyncAsync" disabled="@(Store.Busy || Store.EditingBlocked)">@(Store.Busy ? "Syncing…" : "Sync now")</button> }
+                    </div>
+                    @if (Store.FolderName is not null) { <button class="text-button" @onclick="Store.DisconnectAsync" disabled="@(Store.Busy || Store.EditingBlocked)">Disconnect folder</button> }
+                }
+                <p class="save-status" role="status">@Store.Status</p>
+                <p class="muted">A folder save does not confirm arrival on another device.</p>
+            </section>
+            <section class="backup-panel">
+                <h2>Backups</h2>
+                <div class="button-row"><button @onclick="Store.ExportAsync">Export all</button><label class="file-button">Import<InputFile OnChange="ImportBackup" accept="application/json,.json" /></label></div>
+                <p class="muted">Import creates independent copies.</p>
+                <button class="text-button" @onclick="Store.RequestPersistentStorageAsync">Request persistent storage</button>
+            </section>
+        </aside>
+
+        <main class="main-content" id="main-content">
+            @if (Store.Error is not null)
+            {
+                <div class="notice error" role="alert"><span>@Store.Error</span><button aria-label="Dismiss error" @onclick="Store.DismissError">×</button></div>
+            }
+            @if (Store.CatalogNotice is not null) { <div class="notice">@Store.CatalogNotice</div> }
+            @foreach (var conflict in Store.Conflicts)
+            {
+                <section class="conflict-panel" role="alert">
+                    <h2>Resolve @ConflictName(conflict)</h2><p>@conflict.Reason</p>
+                    <p class="muted">Your choice replaces this tracker's acknowledged folder versions. Other trackers are unaffected.</p>
+                    @if (Store.Trackers.FirstOrDefault(t => t.State.Id == conflict.TrackerId) is { } local)
+                    {
+                        <button @onclick="() => Store.ResolveAsync(conflict.TrackerId, null, true)" disabled="@(Store.Busy || Store.EditingBlocked)">@(local.Deleted ? "Delete folder tracker" : "Keep this device's version")</button>
+                        <small>Edited @local.State.LastEditedUtc.ToLocalTime().ToString("g")</small>
+                    }
+                    @foreach (var file in conflict.Candidates)
+                    {
+                        var candidate = Store.ReadCandidate(conflict, file);
+                        <div class="conflict-version">
+                            @if (candidate is not null)
+                            {
+                                <button @onclick="() => Store.ResolveAsync(conflict.TrackerId, file.FileName, false)" disabled="@(Store.Busy || Store.EditingBlocked)">Use folder version: @candidate.Name</button>
+                                <small>Edited @candidate.LastEditedUtc.ToLocalTime().ToString("g") · @candidate.Checked.Count checked</small>
+                            }
+                            else { <p>Unreadable or unsupported version, preserved in the folder. Update the app if this file uses a newer catalog.</p> }
+                            @if (!file.IntegrityValid) { <strong class="warning-text">Filename hash or identity mismatch</strong> }
+                            <code>@file.FileName</code>
+                        </div>
+                    }
+                    @if (conflict.Candidates.Count == 0)
+                    { <button class="danger" @onclick="() => Store.ResolveAsync(conflict.TrackerId, null, false)" disabled="@(Store.Busy || Store.EditingBlocked)">Accept folder deletion</button> }
+                </section>
+            }
+            @if (Selected is { } active && Store.Catalog.Dexes.SingleOrDefault(d => d.Id == active.State.DexId) is { } dex)
+            {
+                int caught = Store.CheckedCount(active);
+                <section class="tracker-heading">
+                    <div><p class="eyebrow">@GameName(active.State.GameId) / @dex.Name Pokédex</p><h1>@active.State.Name</h1></div>
+                    <div class="progress-summary"><strong>@caught <span>/ @dex.Entries.Count</span></strong><span>@((100.0 * caught / dex.Entries.Count).ToString("0.0"))% checked</span></div>
+                </section>
+                <progress class="completion" value="@caught" max="@dex.Entries.Count" aria-label="Tracker completion"></progress>
+                <div class="tracker-toolbar">
+                    <label class="search-label">Search<input type="search" placeholder="Name, form, or National number" aria-label="Search Pokémon" @bind="search" @bind:event="oninput" /></label>
+                    <label>Show<select aria-label="Filter Pokémon" @bind="filter"><option value="all">All Pokémon</option><option value="unchecked">Unchecked</option><option value="checked">Checked</option></select></label>
+                    <details class="tracker-actions"><summary>Tracker actions</summary><div><button @onclick='() => OpenAction("rename")'>Rename</button><button @onclick="Duplicate">Duplicate</button><button @onclick='() => OpenAction("reset")'>Reset checks</button><button class="danger" @onclick='() => OpenAction("delete")'>Delete tracker</button></div></details>
+                </div>
+                <p class="tracker-meta">@(active.Pending ? "Folder changes pending" : "Folder version saved") · Last edited @active.State.LastEditedUtc.ToLocalTime().ToString("g")
+                    @if (active.LastSyncedUtc is { } synced) { <span> · Last synchronized @synced.ToLocalTime().ToString("g")</span> }
+                </p>
+                @if (!dex.Entries.Any(e => Matches(e, active))) { <p class="notice">No Pokémon match this search and filter.</p> }
+                @foreach (var box in Boxes(dex))
+                {
+                    int visible = box.Entries.Count(e => Matches(e, active));
+                    if (visible == 0 && (search.Length > 0 || filter != "all")) { continue; }
+                    <section class="pokemon-box" aria-label="@box.Title">
+                        <div class="box-heading"><h2>@box.Title</h2><span>@box.Entries.Count(e => active.State.Checked.Contains(e.PokemonId)) / @box.Entries.Count checked</span></div>
+                        <div class="box-grid" style="--columns: @dex.Columns">
+                            @foreach (var entry in box.Entries)
+                            {
+                                var p = Store.Pokemon[entry.PokemonId];
+                                bool isChecked = active.State.Checked.Contains(p.Id);
+                                <div @key="p.Id" class="pokemon-slot @(isChecked ? "is-checked" : "") @(!Matches(entry, active) ? "filtered-out" : "")">
+                                    <label class="pokemon-check"><input type="checkbox" checked="@isChecked" @onchange="eventArgs => Store.ToggleAsync(active.State.Id, p.Id, (bool)eventArgs.Value!)" disabled="@(Store.Busy || Store.EditingBlocked)" aria-label="Mark @p.DisplayName" />
+                                        <span class="slot-number">@(entry.Extra ? $"#{p.NationalNumber:D4}" : entry.Number?.ToString("D3"))</span>
+                                        <img src="sprites/@(p.SpriteId).png" alt="" width="64" height="64" loading="lazy" />
+                                        <span class="pokemon-name">@p.Name</span>@if (p.Form.Length > 0) { <small class="form-label">@p.Form</small> }
+                                    </label>
+                                    <button class="info-button" aria-label="Sources for @p.DisplayName" title="Acquisition sources" @onclick="() => ShowInfo(p)">i</button>
+                                </div>
+                            }
+                            @for (int i = box.Entries.Count; i < dex.Columns * dex.Rows; i++) { <div class="empty-slot" aria-hidden="true"></div> }
+                        </div>
+                    </section>
+                }
+            }
+            else if (Selected is { } unsupported)
+            {
+                <section class="welcome"><h1>@unsupported.State.Name</h1><p>This tracker uses a Pokédex the current catalog does not support. Its data is preserved. Export a backup before making changes.</p><button @onclick='() => OpenAction("rename")'>Rename</button><button class="danger" @onclick='() => OpenAction("delete")'>Delete tracker</button></section>
+            }
+            else
+            {
+                <section class="welcome"><p class="eyebrow">Switch games and beyond</p><h1>A checklist for every collection</h1><p>Create a Pokédex for your next playthrough or living dex. Each tracker keeps its own progress, arranged in the same 30-slot boxes as your game.</p><button class="primary" @onclick="NewTracker">Create your first tracker</button>
+                    <div class="supported-games">@foreach (var group in Store.Catalog.Games.Select(g => g.Group).Distinct()) { <span>@group</span> }</div>
+                    <p class="muted">No account required. Progress is saved in this browser. Export a backup or connect your own folder to move it between devices.</p>
+                </section>
+            }
+            <footer>Unofficial fan project. Pokémon belongs to Nintendo, Game Freak, and Creatures. <a href="https://pokeapi.co/" target="_blank" rel="noopener noreferrer">PokéAPI</a> catalog and sprites · <a href="https://www.serebii.net/" target="_blank" rel="noopener noreferrer">Serebii</a> acquisition sources.</footer>
+        </main>
+    </div>
+
+    <dialog id="create-dialog" aria-labelledby="create-title"><form @onsubmit="Create" @onsubmit:preventDefault>
+        <h2 id="create-title">New tracker</h2><label>Name<input required maxlength="120" @bind="newName" placeholder="My living dex" /></label>
+        <label>Game<select aria-label="Game" value="@newGame" @onchange="ChooseGame">@foreach (var group in Store.Catalog.Games.GroupBy(g => g.Group)) { <optgroup label="@group.Key">@foreach (var game in group) { <option value="@game.Id">@game.Name</option> }</optgroup> }</select></label>
+        <label>Pokédex<select aria-label="Pokédex" @bind="newDex">@foreach (var d in AvailableDexes) { <option value="@d.Id">@d.Name (@d.Entries.Count entries)</option> }</select></label>
+        <p class="muted">Checks belong to this tracker. You can create more trackers for the same Pokédex.</p>
+        <div class="dialog-actions"><button type="button" @onclick='async () => await Store.CloseDialogAsync("create-dialog")'>Cancel</button><button class="primary" type="submit" disabled="@(Store.Busy || Store.EditingBlocked)">Create tracker</button></div>
+    </form></dialog>
+    <dialog id="action-dialog" aria-labelledby="action-title"><form @onsubmit="PerformAction" @onsubmit:preventDefault>
+        <h2 id="action-title">@ActionTitle</h2>
+        @if (action == "rename") { <label>Name<input required maxlength="120" @bind="renameName" /></label> }
+        else { <p>@(action == "reset" ? "Clear every check in this tracker?" : "Delete this tracker and its checklist? This will also be applied to your folder when you synchronize.")</p><p class="muted">This action cannot be undone. You can export a backup first.</p> }
+        <div class="dialog-actions"><button type="button" @onclick='async () => await Store.CloseDialogAsync("action-dialog")'>Cancel</button><button type="submit" class="@(action == "rename" ? "primary" : "danger")" disabled="@(Store.Busy || Store.EditingBlocked)">@ActionTitle</button></div>
+    </form></dialog>
+    <dialog id="info-dialog" aria-labelledby="info-title">
+        @if (info is { } species)
+        {
+            <div class="info-heading"><img src="sprites/@(species.SpriteId).png" alt="" width="80" height="80" /><div><p class="eyebrow">National #@species.NationalNumber.ToString("D4")</p><h2 id="info-title">@species.DisplayName</h2></div></div>
+            @foreach (var game in SourceGames(species))
+            {
+                var source = species.Sources[game.Id];
+                <section class="acquisition"><h3>@game.Name</h3>@if (source.Areas.Count > 0) { <p>@string.Join(", ", source.Areas)</p> }<p class="muted">@source.Method</p><a href="@source.Url" target="_blank" rel="noopener noreferrer">Details on Serebii ↗</a></section>
+            }
+            @if (!SourceGames(species).Any()) { <p>No route record is available for this selection.</p><a href="@($"https://www.serebii.net/pokedex-sv/{species.Id}/")" target="_blank" rel="noopener noreferrer">Details on Serebii</a> }
+        }
+        <div class="dialog-actions"><button class="primary" @onclick='async () => await Store.CloseDialogAsync("info-dialog")'>Close</button></div>
+    </dialog>
+}
+
+@code {
+    private Guid? selectedId;
+    private string search = "", filter = "all", newName = "", newGame = "scarlet", newDex = "paldea", action = "", renameName = "";
+    private string? startupError;
+    private PokemonVariant? info;
+    private LocalTracker? Selected => Store.VisibleTrackers.FirstOrDefault(t => t.State.Id == selectedId);
+    private IEnumerable<DexDefinition> AvailableDexes => Store.Catalog.Dexes.Where(d => d.Group == Store.Catalog.Games.Single(g => g.Id == newGame).Group);
+    private string ActionTitle => action switch { "rename" => "Rename tracker", "reset" => "Reset checks", _ => "Delete tracker" };
+    protected override async Task OnInitializedAsync()
+    {
+        Store.Changed += OnChanged;
+        try { await Store.InitializeAsync(); selectedId = Store.VisibleTrackers.FirstOrDefault()?.State.Id; }
+        catch (Exception ex) { startupError = "Could not open local progress or the catalog. Existing data has not been replaced. " + ex.Message; }
+    }
+    private void OnChanged() { if (!Store.VisibleTrackers.Any(t => t.State.Id == selectedId)) selectedId = Store.VisibleTrackers.FirstOrDefault()?.State.Id; _ = InvokeAsync(StateHasChanged); }
+    private void Select(Guid id) { selectedId = id; search = ""; filter = "all"; }
+    private string GameName(string id) => Store.Catalog.Games.SingleOrDefault(g => g.Id == id)?.Name ?? id;
+    private string DexName(string id) => Store.Catalog.Dexes.SingleOrDefault(d => d.Id == id)?.Name ?? id;
+    private string ConflictName(TrackerConflict conflict) => Store.Trackers.FirstOrDefault(t => t.State.Id == conflict.TrackerId)?.State.Name ?? "folder tracker";
+    private bool Matches(DexEntry entry, LocalTracker tracker)
+    {
+        var p = Store.Pokemon[entry.PokemonId]; bool check = tracker.State.Checked.Contains(p.Id);
+        return (filter == "all" || filter == "checked" && check || filter == "unchecked" && !check) &&
+            (search.Length == 0 || p.DisplayName.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) || p.NationalNumber.ToString().Equals(search.Trim().TrimStart('#', '0'), StringComparison.Ordinal));
+    }
+    private IEnumerable<(string Title, List<DexEntry> Entries)> Boxes(DexDefinition dex)
+    {
+        int size = dex.Columns * dex.Rows, number = 1;
+        foreach (var entries in dex.Entries.Where(e => !e.Extra).Chunk(size)) yield return ($"Box {number++:D2}", entries.ToList());
+        int extra = 1;
+        foreach (var entries in dex.Entries.Where(e => e.Extra).Chunk(size)) yield return ($"Extra forms · Box {extra++:D2}", entries.ToList());
+    }
+    private async Task NewTracker() { newName = ""; await Store.ShowDialogAsync("create-dialog"); }
+    private void ChooseGame(ChangeEventArgs args) { newGame = args.Value!.ToString()!; newDex = AvailableDexes.First().Id; }
+    private async Task Create()
+    {
+        await Store.CreateAsync(newName, newGame, newDex);
+        if (Store.Error is null) { selectedId = Store.VisibleTrackers.Last().State.Id; search = ""; filter = "all"; await Store.CloseDialogAsync("create-dialog"); }
+    }
+    private async Task OpenAction(string value) { action = value; renameName = Selected?.State.Name ?? ""; await Store.ShowDialogAsync("action-dialog"); }
+    private async Task PerformAction()
+    {
+        if (Selected is not { } active) return;
+        if (action == "rename") await Store.RenameAsync(active.State.Id, renameName);
+        else if (action == "reset") await Store.ResetAsync(active.State.Id);
+        else await Store.DeleteAsync(active.State.Id);
+        if (Store.Error is null) await Store.CloseDialogAsync("action-dialog");
+    }
+    private async Task Duplicate() { if (Selected is { } active) { await Store.DuplicateAsync(active.State.Id); selectedId = Store.VisibleTrackers.Last().State.Id; } }
+    private async Task ShowInfo(PokemonVariant species) { info = species; await Store.ShowDialogAsync("info-dialog"); }
+    private IEnumerable<GameDefinition> SourceGames(PokemonVariant species) => Store.Catalog.Games.Where(g => species.Sources.ContainsKey(g.Id) &&
+        (Selected?.State.GameId == "home" || g.Group == Store.Catalog.Games.SingleOrDefault(game => game.Id == Selected?.State.GameId)?.Group));
+    private Task ChangeTheme(ChangeEventArgs args) => Store.SetThemeAsync(args.Value!.ToString()!);
+    private async Task ImportBackup(InputFileChangeEventArgs args)
+    {
+        try { using var reader = new StreamReader(args.File.OpenReadStream(10 * 1024 * 1024)); await Store.ImportAsync(await reader.ReadToEndAsync()); }
+        catch (Exception ex) { Store.ReportError("Could not import backup: " + ex.Message); }
+    }
+    public void Dispose() => Store.Changed -= OnChanged;
+}

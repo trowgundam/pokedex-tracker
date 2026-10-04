@@ -1,0 +1,94 @@
+# Pokédex tracker requirements
+
+This document records Jeff's confirmed requirements. Open decisions remain separate from confirmed behavior.
+
+## Hosting and data ownership
+
+- Build a standalone Blazor WebAssembly application using the existing .NET starter.
+- Host the site publicly on GitHub Pages.
+- The site operator must not store user progress.
+- Users configure synchronization for access from a laptop, phone, tablet, and desktop. Signing in to a storage provider is acceptable.
+- Jeff can maintain site-wide OAuth registrations. Users do not need to register their own cloud applications.
+- Implement only a user-selected folder provider initially. Dropbox, Google Drive, and WebDAV are outside the initial implementation scope.
+- Keep storage providers modular so adding Google Drive or another provider later does not require sweeping changes to tracker behavior.
+- Use one active sync provider at a time.
+- Jeff prefers FOSS options where practical. External software such as Syncthing can synchronize the selected folder.
+- Jeff primarily uses Brave on his laptop and desktop. His Brave does not expose the expected configuration flag. Folder support remains capability-dependent; provide local tracking and backups when unavailable. Do not change his browser configuration.
+- Work on `main`. Do not create another branch or worktree for this initial project.
+
+## Synchronization
+
+- Retain the baseline and time of the last successful synchronization when editing offline.
+- If pending local edits exist and the remote state has changed since that baseline, prompt before resolving the conflict.
+- Offer replacing local state with remote state and replacing remote state with local state. Other reconciliation options remain to be decided.
+- Prevent loss of conflicting data without user acknowledgement. Do not silently choose the later edit.
+- Detect and resolve conflicts per tracker. Editing unrelated trackers on different devices does not create a conflict between those trackers.
+- Support editing an already-open page offline and reopening the application offline after its first successful online visit.
+- Store one current state file per tracker. Do not create an application-managed snapshot history.
+- Include the last edit timestamp and a content hash in each current file's name. Warn when the contents do not match that hash.
+- Delete synchronized files without a folder tombstone. Other devices ask whether to accept deletion or retain and recreate their local tracker.
+- Synchronization is explicit through Sync now. Remember browser folder handles where possible and renew access when required.
+
+## Game coverage
+
+Support these games and all their DLC in the initial release:
+
+- Let's Go Pikachu and Let's Go Eevee.
+- Sword and Shield.
+- Brilliant Diamond and Shining Pearl.
+- Legends: Arceus.
+- Scarlet and Violet.
+- Legends: Z-A.
+- FireRed and LeafGreen on Switch.
+
+Other generations will be added later. The catalog must support every Pokédex available in each supported game and a full National Pokédex across games.
+
+## Checklists
+
+- Users can create any number of trackers for each Pokédex.
+- Creating a tracker creates independent progress. Changes never automatically mark entries in another tracker.
+- A checkbox has no enforced interpretation. Users can use it for Pokédex completion, a living dex, or another purpose.
+- Users can reset a tracker or create another tracker when changing their collection goal.
+- Each game uses its own storage box layout. Scarlet and Violet use 30 slots arranged as five rows of six.
+- The National Pokédex uses the Pokémon HOME box layout.
+- Games without ordinary boxes, including Let's Go, use the Pokémon HOME box layout.
+- On phones, use a list separated by box boundaries, with a group header every 30 entries for HOME-sized boxes.
+- Include naming, renaming, duplicating, resetting, deleting, searching, checked/unchecked filtering, and backup export/import. Preserve box positions when searching or filtering. Reset and delete require confirmation.
+- Provide an information action for each Pokémon to find acquisition sources, following the reference site's interaction.
+- Acquisition information lists route or area names by game and links to Serebii for details. Detailed encounter rates and walkthroughs are outside the initial scope.
+
+## Regional entries and ordering
+
+- Extra forms cover regional variants, not cosmetic forms, gender differences, shinies, or temporary battle transformations.
+- Extra regional entries also include distinct evolutions of those variants, such as Perrserker and Quagsire.
+- A combined Pokédex lists base-game entries first, then new entries added by each DLC in release order.
+- Deduplication preserves distinct regional variants of the same species.
+- An entry with a numbered DLC position occupies that position rather than appearing again among extra regional entries.
+- Numbered regional entries take priority over extra regional entries when assembling a combined list, even when an extra entry is obtainable in the base game.
+- Extra regional entries appear at the end in separate boxes, following the reference site.
+- Automatically add new catalog entries unchecked at the end.
+- Correct inaccurate ordering or form mappings when necessary, preserve checks by Pokémon identity, and show a notice when corrections change box positions.
+
+For Scarlet and Violet, Kantonian Meowth and Paldean Wooper occur in the numbered Paldea list. Galarian Meowth, Perrserker, Johtonian Wooper, and Quagsire supplement that list. In the combined list, Johtonian Wooper and Quagsire occupy their Kitakami positions. Kitakami also includes obtainable Hisuian Growlithe and Hisuian Arcanine as extra regional entries.
+
+White-Striped Basculin occupies Kitakami's ordinary Basculin position. In the combined Scarlet and Violet list, it is distinct from the ordinary Basculin entry in Paldea. Red-Striped and Blue-Striped Basculin share that ordinary entry rather than receiving separate checkboxes.
+
+White-Striped Basculin is an explicit exception justified by its gameplay differences. Do not derive checklist identity generally from movesets or abilities: Red-Striped Basculin has Reckless while Blue-Striped Basculin has Rock Head, despite their shared checklist entry.
+
+## Appearance
+
+- Provide dark and light modes.
+- Default to the browser's reported system color scheme.
+- Allow an explicit theme override.
+- Follow Jeff's style guide: Catppuccin Mocha for dark mode and Latte for light mode.
+
+## Deferred work
+
+- Cloud providers, including Google Drive, Dropbox, or WebDAV.
+- Older generations and public sharing.
+
+Jeff authorized creation of a new public GitHub repository, commits, pushes, Actions and Pages configuration, and testing the live site after local verification. Work remains on main.
+
+## Reference
+
+[Jeff's Scarlet Blueberry tracker](https://pokedextracker.com/u/trowgundam/scarlet-blueberry) provides the box presentation and information-panel reference.

@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="pokedex_tracker/pokedex_tracker.csproj" />
+  <Project Path="PokedexTracker.Core/PokedexTracker.Core.csproj" />
+  <Project Path="tools/CatalogGenerator/CatalogGenerator.csproj" />
+  <Project Path="tools/Checks/Checks.csproj" />
+  <Project Path="tools/Publish/Publish.csproj" />
+</Solution>

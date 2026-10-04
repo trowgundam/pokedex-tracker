@@ -1,0 +1,102 @@
+// Run only against a disposable local preview origin. This drives actual Blazor DOM
+// events and validates visible results; it does not call internal tracker methods.
+async function runPokedexUiChecks() {
+    let checks = 0;
+    const check = (condition, message) => { if (!condition) throw new Error(message); checks++; };
+    const wait = async (condition, message) => {
+        const start = Date.now();
+        while (!condition()) {
+            if (Date.now() - start > 8000) throw new Error(message);
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    };
+    const click = selector => { const element = document.querySelector(selector); if (!element) throw new Error('Missing ' + selector); element.click(); };
+    const change = (selector, value, event = 'change') => { const element = document.querySelector(selector); element.value = value; element.dispatchEvent(new Event(event, { bubbles: true })); };
+    const title = () => document.querySelector('main h1')?.textContent;
+    const ready = () => !!document.querySelector('.sidebar') && !document.querySelector('.sidebar .primary')?.disabled;
+    const name = 'Verification ' + Date.now();
+    await wait(ready, 'The published app did not finish startup.');
+    const originalCount = document.querySelectorAll('.tracker-item').length;
+    click('.sidebar .primary');
+    await wait(() => document.querySelector('#create-dialog').open, 'New tracker dialog did not open.');
+    check(document.querySelector('[aria-label="Game"]').options.length === 13, 'All supported editions can be selected.');
+    change('[aria-label="Game"]', 'legends-za');
+    await wait(() => [...document.querySelector('[aria-label="Pokédex"]').options].some(option => option.value === 'hyperspace'), 'Hyperspace is unavailable.');
+    check([...document.querySelector('[aria-label="Pokédex"]').options].some(option => option.value === 'za-complete'), 'Z-A complete can be selected.');
+    change('[aria-label="Game"]', 'scarlet');
+    await wait(() => document.querySelector('[aria-label="Pokédex"]').value === 'paldea', 'Paldea selection did not update.');
+    change('#create-dialog input', name);
+    click('#create-dialog button[type="submit"]');
+    await wait(() => title() === name && ready(), 'Tracker creation failed.');
+    await wait(() => !document.querySelector('#create-dialog').open, 'Creation dialog did not close.');
+    check(document.querySelector('.box-grid').children.length === 30, 'The first box has 30 positions.');
+    click('[aria-label="Mark Sprigatito"]');
+    await wait(ready, 'Check did not save.');
+    check(document.querySelector('[aria-label="Mark Sprigatito"]').checked, 'A check is visible.');
+    click('[aria-label="Sources for Sprigatito"]');
+    await wait(() => document.querySelector('#info-dialog').open, 'Source dialog did not open.');
+    check(document.querySelector('#info-dialog').innerText.includes('Starter') && document.querySelector('#info-dialog a').href === 'https://www.serebii.net/pokedex-sv/sprigatito/', 'Acquisition information links to the correct species.');
+    click('#info-dialog button');
+    await wait(() => !document.querySelector('#info-dialog').open, 'Source dialog did not close.');
+    change('input[type="search"]', 'wooper', 'input');
+    check(document.querySelectorAll('.pokemon-slot:not(.filtered-out)').length === 2 && document.querySelector('.box-grid').children.length === 30, 'Search preserves box positions for both Wooper forms.');
+    change('input[type="search"]', '', 'input');
+    change('[aria-label="Filter Pokémon"]', 'checked');
+    check(document.querySelectorAll('.pokemon-slot:not(.filtered-out)').length === 1, 'Checked filter shows the marked Pokémon.');
+    change('[aria-label="Filter Pokémon"]', 'all');
+    change('[aria-label="Theme"]', 'dark');
+    await wait(() => document.documentElement.dataset.theme === 'dark', 'Dark mode did not apply.');
+    check(getComputedStyle(document.body).backgroundColor === 'rgb(30, 30, 46)', 'Dark mode uses Mocha.');
+    change('[aria-label="Theme"]', 'light');
+    await wait(() => document.documentElement.dataset.theme === 'light', 'Light mode did not apply.');
+    check(getComputedStyle(document.body).backgroundColor === 'rgb(239, 241, 245)', 'Light mode uses Latte.');
+    change('[aria-label="Theme"]', 'system');
+    await wait(() => document.documentElement.dataset.theme === 'system', 'System mode did not apply.');
+    check(getComputedStyle(document.body).backgroundColor === (matchMedia('(prefers-color-scheme: dark)').matches ? 'rgb(30, 30, 46)' : 'rgb(239, 241, 245)'), 'System mode follows the browser preference.');
+    document.querySelector('.tracker-actions').open = true;
+    click('.tracker-actions button:nth-child(2)');
+    await wait(() => title() === name + ' copy' && ready(), 'Duplicate did not appear.');
+    check(document.querySelector('[aria-label="Mark Sprigatito"]').checked, 'Duplicate starts with copied checks.');
+    click('[aria-label="Mark Sprigatito"]');
+    await wait(ready, 'Duplicate check did not save.');
+    [...document.querySelectorAll('.tracker-item')].find(button => button.querySelector('strong').textContent === name).click();
+    check(document.querySelector('[aria-label="Mark Sprigatito"]').checked, 'Editing a duplicate leaves its original unchanged.');
+    document.querySelector('.tracker-actions').open = true;
+    click('.tracker-actions button:nth-child(1)');
+    await wait(() => document.querySelector('#action-dialog').open, 'Rename dialog did not open.');
+    change('#action-dialog input', name + ' renamed');
+    click('#action-dialog button[type="submit"]');
+    await wait(() => title() === name + ' renamed' && ready(), 'Rename did not persist.');
+    await wait(() => !document.querySelector('#action-dialog').open, 'Rename dialog did not close.');
+    check(document.querySelector('[aria-label="Mark Sprigatito"]').checked, 'Renaming preserves checks.');
+    document.querySelector('.tracker-actions').open = true;
+    click('.tracker-actions button:nth-child(3)');
+    await wait(() => document.querySelector('#action-dialog').open, 'Reset dialog did not open.');
+    click('#action-dialog button[type="button"]');
+    await wait(() => !document.querySelector('#action-dialog').open, 'Canceled reset dialog did not close.');
+    check(document.querySelector('[aria-label="Mark Sprigatito"]').checked, 'Canceling reset preserves checks.');
+    click('.tracker-actions button:nth-child(3)');
+    await wait(() => document.querySelector('#action-dialog').open, 'Reset dialog did not reopen.');
+    click('#action-dialog button[type="submit"]');
+    await wait(ready, 'Reset did not save.');
+    await wait(() => !document.querySelector('#action-dialog').open, 'Reset dialog did not close.');
+    check(!document.querySelector('[aria-label="Mark Sprigatito"]').checked, 'Confirmed reset clears checks.');
+    const names = [name + ' renamed', name + ' copy'];
+    for (const trackerName of names) {
+        [...document.querySelectorAll('.tracker-item')].find(button => button.querySelector('strong').textContent === trackerName).click();
+        document.querySelector('.tracker-actions').open = true;
+        click('.tracker-actions button:nth-child(4)');
+        await wait(() => document.querySelector('#action-dialog').open, 'Delete dialog did not open.');
+        click('#action-dialog button[type="button"]');
+        await wait(() => !document.querySelector('#action-dialog').open, 'Canceled delete dialog did not close.');
+        check(title() === trackerName, 'Canceling deletion preserves the tracker.');
+        click('.tracker-actions button:nth-child(4)');
+        await wait(() => document.querySelector('#action-dialog').open, 'Delete dialog did not reopen.');
+        click('#action-dialog button[type="submit"]');
+        await wait(() => ![...document.querySelectorAll('.tracker-item')].some(button => button.querySelector('strong').textContent === trackerName), 'Confirmed deletion failed.');
+        await wait(() => !document.querySelector('#action-dialog').open && ready(), 'Delete dialog did not finish closing.');
+    }
+    check(document.querySelectorAll('.tracker-item').length === originalCount, 'Control tests remove only their own trackers.');
+    return { passed: checks, events: 'Actual Blazor DOM events', origin: location.origin };
+}
+runPokedexUiChecks();
