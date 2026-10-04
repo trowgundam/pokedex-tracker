@@ -29,4 +29,8 @@ UI automation used the T3 collaborative browser. The Arch KDE VM lacked a browse
 
 The final optimized app also saved a checked tracker to a verified folder file. Removing the file externally preserved the local checklist and showed a deletion conflict. Explicitly accepting the deletion removed the visible tracker and left the folder empty.
 
-GitHub Pages deployment verification is recorded after publication below.
+## Published release
+
+The public [repository](https://github.com/trowgundam/pokedex-tracker) deploys `main` to [GitHub Pages](https://trowgundam.github.io/pokedex-tracker/). Pages uses GitHub Actions with HTTPS enforced. The [initial build and deployment](https://github.com/trowgundam/pokedex-tracker/actions/runs/37242076822) passed all 8,815 checks and published commit `66d6aad` on October 4, 2026.
+
+The published app passed the same 18 DOM control assertions. Its service worker activated and cached all 1,135 assets, proving the hosted integrity metadata matches the delivered files. A separate checked tracker survived a full page reload. Desktop boxes had 30 positions and six columns. At 390 pixels, the published page used box-separated lists with no horizontal overflow and 44-pixel information buttons. No loaded sprite failed. Verification trackers were removed after testing.

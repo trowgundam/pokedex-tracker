@@ -4,6 +4,8 @@
 
 A standalone .NET 10 Blazor WebAssembly checklist for the mainline Pokémon games on Switch. Track each regional Pokédex, DLC list, combined collection, or the full National Pokédex. Create independent trackers for completion, living dexes, or any goal you choose.
 
+[Open the tracker](https://trowgundam.github.io/pokedex-tracker/).
+
 Progress stays in the browser. Optional folder sync writes directly to a folder you select; software such as Syncthing transfers it between your devices. The website has no progress database, login, analytics, or cloud credentials.
 
 ## Run locally

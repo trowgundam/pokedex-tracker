@@ -1,6 +1,6 @@
 # Initial implementation plan
 
-This document describes the initial implementation of the [confirmed requirements](requirements.md). The implementation is complete and undergoing release verification. Jeff accepted capability-dependent Brave support and the external-write limitation.
+This document describes the initial implementation of the [confirmed requirements](requirements.md). The implementation is complete and published on GitHub Pages. See [verification results](verification.md). Jeff accepted capability-dependent Brave support and the external-write limitation.
 
 ## Application structure
 
