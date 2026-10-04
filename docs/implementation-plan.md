@@ -30,6 +30,8 @@ Detect external conflict copies by tracker identity instead of importing them as
 
 Provide all agreed tracker controls. Desktop and tablet layouts follow game box geometry, using HOME geometry for National and games without ordinary boxes. Phone layouts use lists with box group headers. Extra regional entries occupy separate final boxes.
 
+Select trackers and create new ones through the header dropdown. Settings is its final action and opens a modal containing appearance, folder sync, and backup controls. The checklist occupies the full content width.
+
 Use Catppuccin Mocha and Latte with System, Dark, and Light choices. System follows browser preference changes. Use semantic buttons, keyboard access, separate information actions, and touch-sized targets.
 
 Cache the application, catalog, and required images so users can reopen it offline after an initial successful visit. Keep progress in persistent browser storage. Prepare static publication for a GitHub Pages repository path without relying on a server-side route fallback.

@@ -48,7 +48,7 @@ The [Pages workflow](.github/workflows/pages.yml) validates and deploys `main` t
 
 The [browser filesystem checks](tools/browser-checks.js) run in a disposable local preview origin's console. They use real IndexedDB and file handles in OPFS, substituting only the operating-system directory picker. They do not prove a particular browser's native picker or external Syncthing delivery.
 
-The [interface checks](tools/browser-ui-checks.js) drive real Blazor DOM events for creation, acquisition information, filtering, all theme choices, independence, rename, reset, and deletion. They create and remove their own verification trackers. Run them only in a disposable local preview origin.
+The [interface checks](tools/browser-ui-checks.js) drive real Blazor DOM events for tracker navigation, Settings, creation, acquisition information, filtering, all theme choices, independence, rename, reset, and deletion. They create and remove their own verification trackers. Run them only in a disposable local preview origin.
 
 ## Maintain the catalog
 

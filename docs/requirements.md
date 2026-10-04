@@ -77,6 +77,8 @@ White-Striped Basculin is an explicit exception justified by its gameplay differ
 
 ## Appearance
 
+- Use a header dropdown for selecting trackers and creating new ones. Put Settings at the bottom of the dropdown.
+- Put appearance, folder sync, and backup controls in a Settings modal. Keep the checklist free of a persistent sidebar.
 - Provide dark and light modes.
 - Default to the browser's reported system color scheme.
 - Allow an explicit theme override.

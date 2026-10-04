@@ -5,9 +5,30 @@
 <PageTitle>Pokédex tracker</PageTitle>
 <header class="app-header">
     <a class="brand" href="."><span class="brand-mark" aria-hidden="true"></span><span>Pokédex tracker<small>Your collection, one box at a time</small></span></a>
-    <label class="theme-control">Theme
-        <select aria-label="Theme" value="@Store.Theme" @onchange="ChangeTheme"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select>
-    </label>
+    @if (Store.Ready)
+    {
+        <details id="tracker-menu" class="tracker-dropdown">
+            <summary aria-label="Trackers"><span>@(Selected?.State.Name ?? "Trackers")</span></summary>
+            <div class="tracker-menu-panel">
+                <h2>My trackers <span class="muted">@Store.VisibleTrackers.Count()</span></h2>
+                <nav class="tracker-list" aria-label="Select tracker">
+                    @foreach (var tracker in Store.VisibleTrackers)
+                    {
+                        var total = Store.Catalog.Dexes.SingleOrDefault(d => d.Id == tracker.State.DexId)?.Entries.Count ?? 0;
+                        <button class="tracker-item @(selectedId == tracker.State.Id ? "selected" : "")" aria-current="@(selectedId == tracker.State.Id ? "true" : null)" @onclick="() => Select(tracker.State.Id)">
+                            <strong>@tracker.State.Name</strong><span>@GameName(tracker.State.GameId) · @DexName(tracker.State.DexId)</span>
+                            <span class="tracker-count">@Store.CheckedCount(tracker) / @total @(tracker.Pending ? "· pending" : "")</span>
+                        </button>
+                    }
+                </nav>
+                @if (!Store.VisibleTrackers.Any()) { <p class="muted menu-empty">No trackers yet.</p> }
+                <div class="tracker-menu-actions">
+                    <button class="primary" @onclick="NewTracker" disabled="@(Store.Busy || Store.EditingBlocked)">+ New tracker</button>
+                    <button @onclick='async () => await Store.ShowDialogAsync("settings-dialog")'>Settings</button>
+                </div>
+            </div>
+        </details>
+    }
 </header>
 
 @if (!Store.Ready)
@@ -19,47 +40,6 @@
 else
 {
     <div class="workspace">
-        <aside class="sidebar" aria-label="Your trackers">
-            <div class="sidebar-title"><h2>My trackers <span class="muted">@Store.VisibleTrackers.Count()</span></h2></div>
-            <button class="primary full-width" @onclick="NewTracker" disabled="@(Store.Busy || Store.EditingBlocked)">+ New tracker</button>
-            <nav class="tracker-list" aria-label="Select tracker">
-                @foreach (var tracker in Store.VisibleTrackers)
-                {
-                    var total = Store.Catalog.Dexes.SingleOrDefault(d => d.Id == tracker.State.DexId)?.Entries.Count ?? 0;
-                    <button class="tracker-item @(selectedId == tracker.State.Id ? "selected" : "")" aria-current="@(selectedId == tracker.State.Id ? "true" : null)" @onclick="() => Select(tracker.State.Id)">
-                        <strong>@tracker.State.Name</strong><span>@GameName(tracker.State.GameId) · @DexName(tracker.State.DexId)</span>
-                        <span class="tracker-count">@Store.CheckedCount(tracker) / @total @(tracker.Pending ? "· pending" : "")</span>
-                    </button>
-                }
-            </nav>
-            <section class="sync-panel" aria-labelledby="sync-title">
-                <h2 id="sync-title">Folder sync</h2>
-                @if (!Store.Capabilities.Folder)
-                {
-                    <p>This browser does not expose folder access. You can track locally and import or export backups.</p>
-                    <p class="muted">Brave may disable this API. Cloud sync is planned for a later release.</p>
-                }
-                else
-                {
-                    <p>@(Store.FolderName is null ? "Select a folder managed by Syncthing or your preferred sync tool." : $"Connected to {Store.FolderName}")</p>
-                    <div class="button-row">
-                        <button @onclick="Store.ChooseFolderAsync" disabled="@(Store.Busy || Store.EditingBlocked)">Choose folder</button>
-                        @if (Store.FolderName is null) { <button @onclick="Store.ReconnectAsync" disabled="@(Store.Busy || Store.EditingBlocked)">Reconnect</button> }
-                        else { <button class="primary" @onclick="Store.SyncAsync" disabled="@(Store.Busy || Store.EditingBlocked)">@(Store.Busy ? "Syncing…" : "Sync now")</button> }
-                    </div>
-                    @if (Store.FolderName is not null) { <button class="text-button" @onclick="Store.DisconnectAsync" disabled="@(Store.Busy || Store.EditingBlocked)">Disconnect folder</button> }
-                }
-                <p class="save-status" role="status">@Store.Status</p>
-                <p class="muted">A folder save does not confirm arrival on another device.</p>
-            </section>
-            <section class="backup-panel">
-                <h2>Backups</h2>
-                <div class="button-row"><button @onclick="Store.ExportAsync">Export all</button><label class="file-button">Import<InputFile OnChange="ImportBackup" accept="application/json,.json" /></label></div>
-                <p class="muted">Import creates independent copies.</p>
-                <button class="text-button" @onclick="Store.RequestPersistentStorageAsync">Request persistent storage</button>
-            </section>
-        </aside>
-
         <main class="main-content" id="main-content">
             @if (Store.Error is not null)
             {
@@ -151,6 +131,46 @@ else
         </main>
     </div>
 
+    <dialog id="settings-dialog" aria-labelledby="settings-title">
+        <div class="settings-heading"><h2 id="settings-title">Settings</h2><button aria-label="Close settings" @onclick='async () => await Store.CloseDialogAsync("settings-dialog")'>×</button></div>
+        <label class="theme-control">Appearance
+            <select aria-label="Theme" value="@Store.Theme" @onchange="ChangeTheme"><option value="system">Auto (system)</option><option value="dark">Dark</option><option value="light">Light</option></select>
+        </label>
+        @if (Store.Error is not null)
+        { <div class="notice error" role="alert"><span>@Store.Error</span><button aria-label="Dismiss settings error" @onclick="Store.DismissError">×</button></div> }
+        <section class="sync-panel" aria-labelledby="sync-title">
+            <h2 id="sync-title">Folder sync</h2>
+            @if (!Store.Capabilities.Folder)
+            {
+                <p>This browser does not expose folder access. You can track locally and import or export backups.</p>
+                <p class="muted">Brave may disable this API. Cloud sync is planned for a later release.</p>
+            }
+            else
+            {
+                <p>@(Store.FolderName is null ? "Select a folder managed by Syncthing or your preferred sync tool." : $"Connected to {Store.FolderName}")</p>
+                <div class="button-row">
+                    <button @onclick="Store.ChooseFolderAsync" disabled="@(Store.Busy || Store.EditingBlocked)">Choose folder</button>
+                    @if (Store.FolderName is null) { <button @onclick="Store.ReconnectAsync" disabled="@(Store.Busy || Store.EditingBlocked)">Reconnect</button> }
+                    else { <button class="primary" @onclick="Store.SyncAsync" disabled="@(Store.Busy || Store.EditingBlocked)">@(Store.Busy ? "Syncing…" : "Sync now")</button> }
+                </div>
+                @if (Store.FolderName is not null) { <button class="text-button" @onclick="Store.DisconnectAsync" disabled="@(Store.Busy || Store.EditingBlocked)">Disconnect folder</button> }
+            }
+            <p class="save-status" role="status">@Store.Status</p>
+            <p class="muted">A folder save does not confirm arrival on another device.</p>
+        </section>
+        <section class="backup-panel">
+            <h2>Backups</h2>
+            <div class="button-row"><button @onclick="Store.ExportAsync">Export all</button><label class="file-button">Import<InputFile OnChange="ImportBackup" accept="application/json,.json" /></label></div>
+            <p class="muted">Import creates independent copies.</p>
+            <button class="text-button" @onclick="Store.RequestPersistentStorageAsync">Request persistent storage</button>
+        </section>
+
+        @if (Store.Conflicts.Count > 0)
+        {
+            <div class="notice"><p>@Store.Conflicts.Count tracker conflict(s) need your choice.</p><button @onclick='async () => await Store.CloseDialogAsync("settings-dialog")'>Review conflicts</button></div>
+        }
+        <div class="dialog-actions"><button class="primary" @onclick='async () => await Store.CloseDialogAsync("settings-dialog")'>Done</button></div>
+    </dialog>
     <dialog id="create-dialog" aria-labelledby="create-title"><form @onsubmit="Create" @onsubmit:preventDefault>
         <h2 id="create-title">New tracker</h2><label>Name<input required maxlength="120" @bind="newName" placeholder="My living dex" /></label>
         <label>Game<select aria-label="Game" value="@newGame" @onchange="ChooseGame">@foreach (var group in Store.Catalog.Games.GroupBy(g => g.Group)) { <optgroup label="@group.Key">@foreach (var game in group) { <option value="@game.Id">@game.Name</option> }</optgroup> }</select></label>

@@ -34,3 +34,9 @@ The final optimized app also saved a checked tracker to a verified folder file. 
 The public [repository](https://github.com/trowgundam/pokedex-tracker) deploys `main` to [GitHub Pages](https://trowgundam.github.io/pokedex-tracker/). Pages uses GitHub Actions with HTTPS enforced. The [initial build and deployment](https://github.com/trowgundam/pokedex-tracker/actions/runs/37242076822) passed all 8,815 checks and published commit `66d6aad` on October 4, 2026.
 
 The published app passed the same 18 DOM control assertions. Its service worker activated and cached all 1,135 assets, proving the hosted integrity metadata matches the delivered files. A separate checked tracker survived a full page reload. Desktop boxes had 30 positions and six columns. At 390 pixels, the published page used box-separated lists with no horizontal overflow and 44-pixel information buttons. No loaded sprite failed. Verification trackers were removed after testing.
+
+## Navigation revision
+
+The updated UI script passed 27 assertions on desktop and at 390 pixels, including the locally served optimized release. It checks collapsed tracker navigation, Settings as the final dropdown action, dismissal by outside click and Escape, modal focus restoration, the centered Poké Ball, and storage and appearance controls inside Settings. A native Escape key also closed Settings and restored focus. The desktop checklist occupied the full content width with six box columns. The phone layout had no horizontal overflow.
+
+Syncing through Settings wrote a hash-verified tracker to a real OPFS directory. Removing that file externally produced a conflict; the Settings review action closed the modal and exposed resolution in the checklist. Accepting deletion cleaned up the test tracker. Only the directory picker was substituted.

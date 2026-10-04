@@ -178,5 +178,28 @@ export function download(name, content) {
     anchor.href = url; anchor.download = name; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-export function openDialog(id) { document.getElementById(id)?.showModal(); }
+document.addEventListener('click', event => {
+    const menu = document.getElementById('tracker-menu');
+    if (!menu?.open || !(event.target instanceof Element)) return;
+    if (!menu.contains(event.target) || event.target.closest('button')) {
+        menu.open = false;
+        if (menu.contains(event.target)) menu.querySelector('summary').focus();
+    }
+});
+document.addEventListener('keydown', event => {
+    const menu = document.getElementById('tracker-menu');
+    if (event.key === 'Escape' && menu?.open) {
+        menu.open = false;
+        menu.querySelector('summary').focus();
+        event.preventDefault();
+    }
+});
+export function openDialog(id) {
+    const dialog = document.getElementById(id);
+    if (!dialog) return;
+    const opener = document.activeElement;
+    const focusTarget = opener?.closest('#tracker-menu')?.querySelector('summary') ?? opener;
+    dialog.addEventListener('close', () => { if (focusTarget?.isConnected) focusTarget.focus(); }, { once: true });
+    dialog.showModal();
+}
 export function closeDialog(id) { document.getElementById(id)?.close(); }

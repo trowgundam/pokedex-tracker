@@ -13,11 +13,28 @@ async function runPokedexUiChecks() {
     const click = selector => { const element = document.querySelector(selector); if (!element) throw new Error('Missing ' + selector); element.click(); };
     const change = (selector, value, event = 'change') => { const element = document.querySelector(selector); element.value = value; element.dispatchEvent(new Event(event, { bubbles: true })); };
     const title = () => document.querySelector('main h1')?.textContent;
-    const ready = () => !!document.querySelector('.sidebar') && !document.querySelector('.sidebar .primary')?.disabled;
+    const ready = () => !!document.querySelector('#tracker-menu') && !document.querySelector('.tracker-menu-actions .primary')?.disabled;
+    const selectTracker = trackerName => {
+        click('#tracker-menu > summary');
+        [...document.querySelectorAll('.tracker-item')].find(button => button.querySelector('strong').textContent === trackerName).click();
+    };
     const name = 'Verification ' + Date.now();
     await wait(ready, 'The published app did not finish startup.');
     const originalCount = document.querySelectorAll('.tracker-item').length;
-    click('.sidebar .primary');
+    check(!document.querySelector('.sidebar') && getComputedStyle(document.querySelector('.workspace')).display === 'block', 'The checklist has no sidebar column.');
+    check(!document.querySelector('#tracker-menu').open, 'Tracker navigation starts collapsed.');
+    click('#tracker-menu > summary');
+    check([...document.querySelectorAll('.tracker-menu-actions button')].at(-1).textContent === 'Settings', 'Settings is the final dropdown action.');
+    document.querySelector('main').click();
+    check(!document.querySelector('#tracker-menu').open, 'Clicking outside dismisses the dropdown.');
+    click('#tracker-menu > summary');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    check(!document.querySelector('#tracker-menu').open && document.activeElement === document.querySelector('#tracker-menu > summary'), 'Escape dismisses navigation and returns focus.');
+    const mark = document.querySelector('.brand-mark'), circle = getComputedStyle(mark, '::after'), transform = new DOMMatrix(circle.transform);
+    const centered = (position, translation, dimension, border, size) => Math.abs(parseFloat(position) + translation + parseFloat(dimension) / 2 + parseFloat(border) - size / 2) < .1;
+    check(centered(circle.left, transform.e, circle.width, getComputedStyle(mark).borderLeftWidth, mark.getBoundingClientRect().width) && centered(circle.top, transform.f, circle.height, getComputedStyle(mark).borderTopWidth, mark.getBoundingClientRect().height), 'The Poké Ball center is centered on both axes.');
+    click('#tracker-menu > summary');
+    click('.tracker-menu-actions .primary');
     await wait(() => document.querySelector('#create-dialog').open, 'New tracker dialog did not open.');
     check(document.querySelector('[aria-label="Game"]').options.length === 13, 'All supported editions can be selected.');
     change('[aria-label="Game"]', 'legends-za');
@@ -29,6 +46,7 @@ async function runPokedexUiChecks() {
     click('#create-dialog button[type="submit"]');
     await wait(() => title() === name && ready(), 'Tracker creation failed.');
     await wait(() => !document.querySelector('#create-dialog').open, 'Creation dialog did not close.');
+    check(!document.querySelector('#tracker-menu').open, 'Creating a tracker closes the dropdown.');
     check(document.querySelector('.box-grid').children.length === 30, 'The first box has 30 positions.');
     click('[aria-label="Mark Sprigatito"]');
     await wait(ready, 'Check did not save.');
@@ -44,6 +62,10 @@ async function runPokedexUiChecks() {
     change('[aria-label="Filter Pokémon"]', 'checked');
     check(document.querySelectorAll('.pokemon-slot:not(.filtered-out)').length === 1, 'Checked filter shows the marked Pokémon.');
     change('[aria-label="Filter Pokémon"]', 'all');
+    click('#tracker-menu > summary');
+    click('.tracker-menu-actions button:last-child');
+    await wait(() => document.querySelector('#settings-dialog').open, 'Settings did not open.');
+    check(!document.querySelector('#tracker-menu').open && document.querySelector('#settings-dialog .sync-panel') && document.querySelector('#settings-dialog .backup-panel') && !document.querySelector('.app-header select'), 'Settings contains storage and appearance controls.');
     change('[aria-label="Theme"]', 'dark');
     await wait(() => document.documentElement.dataset.theme === 'dark', 'Dark mode did not apply.');
     check(getComputedStyle(document.body).backgroundColor === 'rgb(30, 30, 46)', 'Dark mode uses Mocha.');
@@ -53,13 +75,16 @@ async function runPokedexUiChecks() {
     change('[aria-label="Theme"]', 'system');
     await wait(() => document.documentElement.dataset.theme === 'system', 'System mode did not apply.');
     check(getComputedStyle(document.body).backgroundColor === (matchMedia('(prefers-color-scheme: dark)').matches ? 'rgb(30, 30, 46)' : 'rgb(239, 241, 245)'), 'System mode follows the browser preference.');
+    click('#settings-dialog .dialog-actions button');
+    await wait(() => !document.querySelector('#settings-dialog').open, 'Settings did not close.');
+    check(document.activeElement === document.querySelector('#tracker-menu > summary'), 'Closing settings returns focus to tracker navigation.');
     document.querySelector('.tracker-actions').open = true;
     click('.tracker-actions button:nth-child(2)');
     await wait(() => title() === name + ' copy' && ready(), 'Duplicate did not appear.');
     check(document.querySelector('[aria-label="Mark Sprigatito"]').checked, 'Duplicate starts with copied checks.');
     click('[aria-label="Mark Sprigatito"]');
     await wait(ready, 'Duplicate check did not save.');
-    [...document.querySelectorAll('.tracker-item')].find(button => button.querySelector('strong').textContent === name).click();
+    selectTracker(name);
     check(document.querySelector('[aria-label="Mark Sprigatito"]').checked, 'Editing a duplicate leaves its original unchanged.');
     document.querySelector('.tracker-actions').open = true;
     click('.tracker-actions button:nth-child(1)');
@@ -83,7 +108,7 @@ async function runPokedexUiChecks() {
     check(!document.querySelector('[aria-label="Mark Sprigatito"]').checked, 'Confirmed reset clears checks.');
     const names = [name + ' renamed', name + ' copy'];
     for (const trackerName of names) {
-        [...document.querySelectorAll('.tracker-item')].find(button => button.querySelector('strong').textContent === trackerName).click();
+        selectTracker(trackerName);
         document.querySelector('.tracker-actions').open = true;
         click('.tracker-actions button:nth-child(4)');
         await wait(() => document.querySelector('#action-dialog').open, 'Delete dialog did not open.');
