@@ -52,3 +52,11 @@ New assertions first reproduced the incorrect Paldea extras, DLC-only Lumiose fo
 The new browser catalog script passed 45 assertions against the locally served optimized build. It created and removed trackers for the exact four Scarlet and Violet lists, all three Sword and Shield regions, Let's Go, BDSP National, FireRed National, Lumiose, and the full cross-game National list. It checked rendered entries, progress totals, excluded forms, and native acquisition information. The existing interface script also passed all 27 assertions.
 
 An old-catalog backup with Sprigatito and transfer-only Alolan Raichu checked was imported through Settings. After a full reload, Sprigatito remained checked, Alolan Raichu was absent from the Paldea checklist, and progress was 1 of 404. IndexedDB retained both saved identities, and the interface displayed its catalog-change notice. The verification tracker was then removed. Catalog corrections preserve saved data while counting only current checklist entries.
+
+## Visual themes
+
+Settings now separates Theme from Color scheme. The theme script passed 102 assertions against both development and locally served optimized builds. It covered all 13 edition choices, light and dark game palettes, Auto, tracker switching, neutral welcome and HOME palettes, Catppuccin consistency, and cleanup after deleting the last tracker. Tested text, muted text, primary-button text, and accent contrast had a minimum ratio of 5.27:1. The existing 27 interface assertions also passed.
+
+Live browser preference changes switched Auto between light and dark without a reload for both Catppuccin and Game Specific. A saved Game Specific, Dark preference survived a full optimized-app reload, restored Scarlet's palette, and retained the checked Sprigatito. At 390 pixels, Settings displayed both selectors with 44-pixel heights, the checklist used box-separated lists, and the page had no horizontal overflow. Verification trackers were removed.
+
+The optimized Pages output includes `css/themes.css` in its offline manifest, with matching hashes for all 1,136 assets. New themes require a registry entry and CSS palette variables; they do not change tracker or sync behavior.

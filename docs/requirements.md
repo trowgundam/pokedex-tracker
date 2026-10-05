@@ -91,8 +91,12 @@ White-Striped Basculin is an explicit exception justified by its gameplay differ
 - Put appearance, folder sync, and backup controls in a Settings modal. Keep the checklist free of a persistent sidebar.
 - Provide dark and light modes.
 - Default to the browser's reported system color scheme.
-- Allow an explicit theme override.
-- Follow Jeff's style guide: Catppuccin Mocha for dark mode and Latte for light mode.
+- Keep Auto, Light, and Dark as the color-scheme selection, independent of the visual theme.
+- Offer Catppuccin and Game Specific themes. Preserve Catppuccin as the default, using Mocha in dark mode and Latte in light mode.
+- Game Specific follows the edition of the currently displayed tracker, including its DLC and combined lists. Each supported edition has light and dark palettes inspired by its prominent artwork colors.
+- Game Specific uses neutral light and dark palettes on the welcome screen and for the full cross-game National tracker.
+- Remember theme and color scheme on the device. Theme preferences do not alter checklist or sync data.
+- Keep theme registration and palette definitions separate from tracker behavior so additional themes require no tracker or sync changes.
 
 ## Deferred work
 

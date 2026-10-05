@@ -16,7 +16,8 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
     public List<TrackerConflict> Conflicts { get; private set; } = [];
     public BrowserCapabilities Capabilities { get; private set; } = new(false, true, false);
     public string? FolderName { get; private set; }
-    public string Theme { get; private set; } = "system";
+    public string ColorScheme { get; private set; } = "system";
+    public string Theme { get; private set; } = AppearanceThemes.All[0].Id;
     public string Status { get; private set; } = "Saved on this device";
     public string? Error { get; private set; }
     public string? CatalogNotice { get; private set; }
@@ -37,7 +38,8 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
             ?? throw new InvalidDataException("The catalog is empty.");
         Pokemon = Catalog.Pokemon.ToDictionary(p => p.Id);
         Capabilities = await browser.InvokeAsync<BrowserCapabilities>("capabilities");
-        Theme = await browser.InvokeAsync<string>("getTheme");
+        ColorScheme = await browser.InvokeAsync<string>("getColorScheme");
+        Theme = AppearanceThemes.Normalize(await browser.InvokeAsync<string>("getThemeChoice"));
         string saved = await browser.InvokeAsync<string>("loadLocal");
         Trackers = JsonSerializer.Deserialize<List<LocalTracker>>(saved, TrackerJson.Options)
             ?? throw new InvalidDataException("Local progress could not be read.");
@@ -198,9 +200,15 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
     });
     public async Task SetThemeAsync(string theme)
     {
-        if (theme is not ("system" or "dark" or "light")) return;
-        await browser!.InvokeVoidAsync("setTheme", theme); Theme = theme; Changed?.Invoke();
+        Theme = AppearanceThemes.Normalize(theme);
+        await browser!.InvokeVoidAsync("setThemeChoice", Theme); Changed?.Invoke();
     }
+    public async Task SetColorSchemeAsync(string scheme)
+    {
+        if (scheme is not ("system" or "dark" or "light")) return;
+        await browser!.InvokeVoidAsync("setColorScheme", scheme); ColorScheme = scheme; Changed?.Invoke();
+    }
+    public ValueTask ApplyAppearanceAsync(string? gameId) => browser!.InvokeVoidAsync("applyAppearance", Theme, ColorScheme, gameId);
     public ValueTask ShowDialogAsync(string id) => browser!.InvokeVoidAsync("openDialog", id);
     public ValueTask CloseDialogAsync(string id) => browser!.InvokeVoidAsync("closeDialog", id);
     public async Task RequestPersistentStorageAsync()

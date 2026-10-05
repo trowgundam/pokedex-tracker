@@ -166,11 +166,26 @@ export async function commitFolder(id, expected, name, content) {
     // Serializes tabs on this origin, not external folder synchronization tools.
     return navigator.locks ? navigator.locks.request('pokedex-folder-sync', perform) : perform();
 }
-export function setTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('pokedex-theme', theme);
+export function setColorScheme(scheme) {
+    document.documentElement.dataset.colorScheme = scheme;
+    // Retain the original key so existing Auto/Light/Dark preferences survive.
+    localStorage.setItem('pokedex-theme', scheme);
 }
-export function getTheme() { return localStorage.getItem('pokedex-theme') ?? 'system'; }
+export function getColorScheme() {
+    const stored = localStorage.getItem('pokedex-theme');
+    return ['system', 'light', 'dark'].includes(stored) ? stored : 'system';
+}
+export function setThemeChoice(theme) {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('pokedex-appearance', theme);
+}
+export function getThemeChoice() { return localStorage.getItem('pokedex-appearance') ?? 'catppuccin'; }
+export function applyAppearance(theme, scheme, gameId) {
+    const root = document.documentElement;
+    root.dataset.theme = theme;
+    root.dataset.colorScheme = scheme;
+    root.dataset.game = gameId ?? '';
+}
 export async function persistStorage() { return navigator.storage?.persist ? await navigator.storage.persist() : false; }
 export function download(name, content) {
     const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));

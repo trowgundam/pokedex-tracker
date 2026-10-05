@@ -133,8 +133,11 @@ else
 
     <dialog id="settings-dialog" aria-labelledby="settings-title">
         <div class="settings-heading"><h2 id="settings-title">Settings</h2><button aria-label="Close settings" @onclick='async () => await Store.CloseDialogAsync("settings-dialog")'>×</button></div>
-        <label class="theme-control">Appearance
-            <select aria-label="Theme" value="@Store.Theme" @onchange="ChangeTheme"><option value="system">Auto (system)</option><option value="dark">Dark</option><option value="light">Light</option></select>
+        <label class="theme-control">Theme
+            <select aria-label="Theme" value="@Store.Theme" @onchange="ChangeTheme">@foreach (var theme in AppearanceThemes.All) { <option value="@theme.Id">@theme.Name</option> }</select>
+        </label>
+        <label class="theme-control">Color scheme
+            <select aria-label="Color scheme" value="@Store.ColorScheme" @onchange="ChangeColorScheme"><option value="system">Auto (system)</option><option value="light">Light</option><option value="dark">Dark</option></select>
         </label>
         @if (Store.Error is not null)
         { <div class="notice error" role="alert"><span>@Store.Error</span><button aria-label="Dismiss settings error" @onclick="Store.DismissError">×</button></div> }
@@ -214,6 +217,10 @@ else
         catch (Exception ex) { startupError = "Could not open local progress or the catalog. Existing data has not been replaced. " + ex.Message; }
     }
     private void OnChanged() { if (!Store.VisibleTrackers.Any(t => t.State.Id == selectedId)) selectedId = Store.VisibleTrackers.FirstOrDefault()?.State.Id; _ = InvokeAsync(StateHasChanged); }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Store.Ready) await Store.ApplyAppearanceAsync(Selected?.State.GameId);
+    }
     private void Select(Guid id) { selectedId = id; search = ""; filter = "all"; }
     private string GameName(string id) => Store.Catalog.Games.SingleOrDefault(g => g.Id == id)?.Name ?? id;
     private string DexName(string id) => Store.Catalog.Dexes.SingleOrDefault(d => d.Id == id)?.Name ?? id;
@@ -252,6 +259,7 @@ else
     private IEnumerable<GameDefinition> SourceGames(PokemonVariant species) => Store.Catalog.Games.Where(g => species.Sources.ContainsKey(g.Id) &&
         (Selected?.State.GameId == "home" || g.Group == Store.Catalog.Games.SingleOrDefault(game => game.Id == Selected?.State.GameId)?.Group));
     private Task ChangeTheme(ChangeEventArgs args) => Store.SetThemeAsync(args.Value!.ToString()!);
+    private Task ChangeColorScheme(ChangeEventArgs args) => Store.SetColorSchemeAsync(args.Value!.ToString()!);
     private async Task ImportBackup(InputFileChangeEventArgs args)
     {
         try { using var reader = new StreamReader(args.File.OpenReadStream(10 * 1024 * 1024)); await Store.ImportAsync(await reader.ReadToEndAsync()); }

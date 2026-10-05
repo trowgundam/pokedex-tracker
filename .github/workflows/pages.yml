@@ -28,6 +28,7 @@ jobs:
           node --check tools/browser-checks.js
           node --check tools/browser-ui-checks.js
           node --check tools/browser-catalog-checks.js
+          node --check tools/browser-theme-checks.js
       - name: Publish standalone app
         run: dotnet publish pokedex_tracker -c Release -o artifacts/publish
       - name: Prepare repository path and offline cache

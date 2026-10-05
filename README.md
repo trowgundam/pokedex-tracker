@@ -41,6 +41,7 @@ node --check pokedex_tracker/wwwroot/app.js
 node --check tools/browser-checks.js
 node --check tools/browser-ui-checks.js
 node --check tools/browser-catalog-checks.js
+node --check tools/browser-theme-checks.js
 dotnet workload install wasm-tools
 dotnet publish pokedex_tracker -c Release -o artifacts/publish
 dotnet run --project tools/Publish -- artifacts/publish/wwwroot /pokedex-tracker/
@@ -55,6 +56,14 @@ The [browser filesystem checks](tools/browser-checks.js) run in a disposable loc
 The [interface checks](tools/browser-ui-checks.js) drive real Blazor DOM events for tracker navigation, Settings, creation, acquisition information, filtering, all theme choices, independence, rename, reset, and deletion. They create and remove their own verification trackers. Run them only in a disposable local preview origin.
 
 The [catalog interface checks](tools/browser-catalog-checks.js) create trackers to verify native counts, exact Scarlet and Violet extras, DLC boundaries, acquisition links, numbered event entries, and the unrestricted cross-game National list. They remove their own trackers afterward.
+
+The [theme checks](tools/browser-theme-checks.js) exercise both visual themes and all color schemes across every edition. They check navigation, neutral fallback, Catppuccin consistency, and the contrast of text and primary actions.
+
+## Appearance
+
+Settings separates **Theme** from **Color scheme**. Catppuccin uses Latte and Mocha. Game Specific follows the displayed tracker's edition, with neutral palettes for the welcome screen and full National tracker. Auto follows the browser's color scheme, including changes while the app is open. Both preferences stay on the device.
+
+To add a theme, register its ID and display name in [AppearanceThemes.cs](pokedex_tracker/Services/AppearanceThemes.cs), then define its color variables in [themes.css](pokedex_tracker/wwwroot/css/themes.css) under `:root[data-theme="your-id"]`. Each `light-dark(light, dark)` value supplies both variants. Layout uses semantic variables such as `--base`, `--text`, and `--accent`. Game-dependent palettes can also select `data-game`; unknown games inherit the theme's base palette. Tracker and synchronization code need no changes.
 
 ## Maintain the catalog
 

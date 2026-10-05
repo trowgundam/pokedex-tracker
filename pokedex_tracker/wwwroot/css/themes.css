@@ -1,0 +1,74 @@
+/* Palettes are independent of layout. Every color lists light, then dark.
+   Auto follows the browser preference, including changes while the app is open. */
+:root {
+    color-scheme: light dark;
+    --base: light-dark(#eff1f5, #1e1e2e);
+    --mantle: light-dark(#e6e9ef, #181825);
+    --surface: light-dark(#ccd0da, #313244);
+    --raised: light-dark(#bcc0cc, #45475a);
+    --border: light-dark(#9ca0b0, #6c7086);
+    --text: light-dark(#4c4f69, #cdd6f4);
+    --muted: light-dark(#5c5f77, #bac2de);
+    --accent: light-dark(#1e66f5, #89b4fa);
+    --on-accent: light-dark(#fff, #181825);
+    --red: light-dark(#d20f39, #f38ba8);
+    --yellow: light-dark(#8c5b00, #f9e2af);
+    --green: light-dark(#217b19, #a6e3a1);
+}
+:root[data-color-scheme="light"] { color-scheme: light; }
+:root[data-color-scheme="dark"] { color-scheme: dark; }
+
+/* Game artwork supplies the hue and accent; surfaces use restrained tints.
+   No tracker, HOME, and unknown future games use this neutral blue-gray base. */
+:root[data-theme="game"] {
+    --game-hue: 215;
+    --game-accent: light-dark(#315da3, #9abbed);
+    --base: light-dark(hsl(var(--game-hue) 20% 97%), hsl(var(--game-hue) 25% 10%));
+    --mantle: light-dark(hsl(var(--game-hue) 24% 93%), hsl(var(--game-hue) 27% 8%));
+    --surface: light-dark(hsl(var(--game-hue) 25% 87%), hsl(var(--game-hue) 22% 19%));
+    --raised: light-dark(hsl(var(--game-hue) 24% 81%), hsl(var(--game-hue) 20% 26%));
+    --border: light-dark(hsl(var(--game-hue) 15% 58%), hsl(var(--game-hue) 16% 46%));
+    --text: light-dark(hsl(var(--game-hue) 28% 20%), hsl(var(--game-hue) 25% 91%));
+    --muted: light-dark(hsl(var(--game-hue) 18% 34%), hsl(var(--game-hue) 20% 76%));
+    --accent: var(--game-accent);
+    --on-accent: light-dark(#fff, #121a21);
+    --red: light-dark(#b3213a, #ff9dab);
+    --yellow: light-dark(#805500, #f4d28a);
+    --green: light-dark(#24662b, #a3d6a1);
+}
+:root[data-theme="game"][data-game="letsgo-pikachu"] {
+    --game-hue: 48; --game-accent: light-dark(#8a6000, #f3cc4d);
+}
+:root[data-theme="game"][data-game="letsgo-eevee"] {
+    --game-hue: 28; --game-accent: light-dark(#855021, #d6ac74);
+}
+:root[data-theme="game"][data-game="sword"] {
+    --game-hue: 197; --game-accent: light-dark(#006e91, #63cfec);
+}
+:root[data-theme="game"][data-game="shield"] {
+    --game-hue: 340; --game-accent: light-dark(#a42658, #ef8bab);
+}
+:root[data-theme="game"][data-game="brilliant-diamond"] {
+    --game-hue: 214; --game-accent: light-dark(#225ec4, #94beff);
+}
+:root[data-theme="game"][data-game="shining-pearl"] {
+    --game-hue: 325; --game-accent: light-dark(#a02777, #ed9bd3);
+}
+:root[data-theme="game"][data-game="legends-arceus"] {
+    --game-hue: 163; --game-accent: light-dark(#176f61, #76ccae);
+}
+:root[data-theme="game"][data-game="scarlet"] {
+    --game-hue: 13; --game-accent: light-dark(#ae351f, #ffad8e);
+}
+:root[data-theme="game"][data-game="violet"] {
+    --game-hue: 270; --game-accent: light-dark(#7440bd, #c5a0f4);
+}
+:root[data-theme="game"][data-game="legends-za"] {
+    --game-hue: 166; --game-accent: light-dark(#087465, #61dabb);
+}
+:root[data-theme="game"][data-game="firered"] {
+    --game-hue: 21; --game-accent: light-dark(#ad420f, #ffac72);
+}
+:root[data-theme="game"][data-game="leafgreen"] {
+    --game-hue: 110; --game-accent: light-dark(#3b7426, #9ed47a);
+}
