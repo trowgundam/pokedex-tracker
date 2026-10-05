@@ -48,6 +48,19 @@ async function runPokedexUiChecks() {
     await wait(() => document.querySelector('.pokemon-box'), 'Checklist view did not open.');
     check(document.querySelector('[aria-label="Tracker view"] button:first-child').getAttribute('aria-pressed') === 'true', 'The checklist view exposes its selected state.');
     check(document.querySelector('.pokemon-box .box-heading h2').textContent === '001-030', 'Main boxes use position ranges.');
+    if (matchMedia('(max-width: 719px)').matches) {
+        const slots = [...document.querySelector('.pokemon-box').querySelectorAll('.pokemon-slot')];
+        const first = slots[0].getBoundingClientRect(), second = slots[1].getBoundingClientRect();
+        check(first.left === second.left && second.top >= first.bottom, 'Phone checklists show one Pokémon per row.');
+        check(first.height < 120 && getComputedStyle(slots[0].querySelector('label')).display === 'grid', 'Phone rows use a compact horizontal checklist.');
+        check(document.documentElement.scrollWidth <= innerWidth, 'The phone checklist does not overflow horizontally.');
+    }
+    if (matchMedia('(min-width: 720px)').matches) {
+        const slots = [...document.querySelector('.pokemon-box').querySelectorAll('.pokemon-slot')];
+        const rects = slots.slice(0, 7).map(slot => slot.getBoundingClientRect());
+        check(rects.slice(0, 6).every(rect => rect.top === rects[0].top) && rects[6].top >= rects[0].bottom, 'Non-phone boxes preserve six columns and the game row boundary.');
+        check(document.documentElement.scrollWidth <= innerWidth, 'Non-phone box geometry does not overflow the page.');
+    }
     check([...document.querySelectorAll('.box-heading h2')].some(heading => heading.textContent === '391-400') && [...document.querySelectorAll('.box-heading h2')].some(heading => heading.textContent === 'Extra forms · Box 01'), 'Partial main box ranges and extra-form labels are correct.');
     check(document.querySelector('.box-grid').children.length === 30, 'The first box has 30 positions.');
     const cell = document.querySelector('[aria-label="Mark Sprigatito"]').closest('.pokemon-slot');

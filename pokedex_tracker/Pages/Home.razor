@@ -7,7 +7,7 @@
 <PageTitle>Pokédex tracker</PageTitle>
 @if (!Store.Ready)
 {
-    <main class="loading-state"><h1>Loading your Pokédexes</h1><p>@(startupError ?? "Your progress stays on this device until you sync a folder.")</p>
+    <main class="loading-state"><h1>Loading your trackers</h1><p>@(startupError ?? "Your progress stays on this device until you sync a folder.")</p>
         @if (startupError is not null) { <button onclick="location.reload()">Reload</button> }
     </main>
 }
@@ -142,7 +142,7 @@ else
             }
             else
             {
-                <section class="welcome"><p class="eyebrow">Switch games and beyond</p><h1>A checklist for every collection</h1><p>Create a Pokédex for your next playthrough or living dex. Each tracker keeps its own progress, arranged in the same 30-slot boxes as your game.</p><button class="primary" @onclick="NewTracker">Create your first tracker</button>
+                <section class="welcome"><p class="eyebrow">Switch games and beyond</p><h1>A checklist for every collection</h1><p>Create a tracker for your next playthrough or living dex. Each tracker keeps its own progress, arranged in the same 30-slot boxes as your game.</p><button class="primary" @onclick="NewTracker">Create your first tracker</button>
                     <div class="supported-games">@foreach (var group in Store.Catalog.Games.Select(g => g.Group).Distinct()) { <span>@group</span> }</div>
                     <p class="muted">No account required. Progress is saved in this browser. Export a backup or connect your own folder to move it between devices.</p>
                 </section>
@@ -196,7 +196,7 @@ else
             <h2 id="sync-title">Folder sync</h2>
             @if (!Store.Capabilities.Folder)
             {
-                <p>This browser does not expose folder access. You can track locally and import or export backups.</p>
+                <p>Folder sync requires folder access and Web Locks in a secure connection. You can track locally and import or export backups.</p>
                 <p class="muted">Brave may disable this API. Cloud sync is planned for a later release.</p>
             }
             else

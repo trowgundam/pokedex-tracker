@@ -10,7 +10,7 @@ Form compatibility and numbered regional slots were cross-checked against [PKHeX
 
 Membership follows native acquisition in the selected game or DLC, including permanent gifts, in-game trades, breeding, evolution, and trades between paired editions. HOME, Bank, GO, and other game-family imports do not qualify. Trading an imported Pokémon does not establish a native source. Neither HOME compatibility nor species-level dex membership proves obtainability.
 
-Numbered entries from expired in-game events remain, including Walking Wake, Iron Leaves, Zarude, Manaphy, Darkrai, and Shaymin. Event-only extra forms are excluded. Permanent quest rewards and save-data gifts qualify. Combined lists remain the union of component Pokédexes and their regional extras, rather than every compatible or unnumbered species.
+Numbered entries from expired in-game events remain, including Walking Wake, Iron Leaves, Zarude, Manaphy, Darkrai, and Shaymin. Event-only extra forms are excluded. National game-source rankings also exclude expired distributions outside that game's numbered Dex. Permanent quest rewards and save-data gifts qualify. Combined lists remain the union of component Pokédexes and their regional extras, rather than every compatible or unnumbered species.
 
 Scope follows required content, not just the encounter map. Crown Tundra's roaming birds are Crown entries even when they appear in the Wild Area or Isle of Armor. Base-game breeding and evolution facilities can support DLC-native Pokémon.
 
@@ -69,4 +69,6 @@ Crown extras include [Max Lair encounters](https://www.serebii.net/swordshield/d
 
 Location extraction is limited to factual route/area names and short acquisition categories. Reviewed overrides cover regional gifts, trades, and cases where the source page omits a game record. Serebii links provide the detailed conditions. Edition exclusivity can require trades even when an area has a fixed encounter of another form; consult the linked source for exact conditions.
 
-The generator and checks are rerunnable. Catalog changes require a version increase and a review of membership, native forms, availability, and combined ordering.
+National game sources also cover native Pokémon outside numbered regional checklists. The generator reads the Dynamax Adventure and Snacksworth encounter lists independently of checklist membership, plus reviewed gifts, breeding, and evolutions such as Poké Ball Plus Mew, Keldeo, Cosmog, Poipole, the Hoenn starters, and Urshifu. Tauros's Blaze and Aqua breeds have their own native-edition and paired-edition trade sources. These source records do not add entries to regional or combined checklists.
+
+The generator and checks are rerunnable. Membership or ordering changes require a catalog version increase. Review membership, native forms, availability, and combined ordering whenever regenerating the catalog.

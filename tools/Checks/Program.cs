@@ -67,6 +67,22 @@ foreach (var p in catalog.Pokemon)
 var pikachu = catalog.Pokemon.Single(p => p.Id == "pikachu");
 Check(pikachu.Sources["letsgo-pikachu"].Areas.Contains("Viridian Forest"), "Let's Go route extraction returns Viridian Forest.");
 Check(pikachu.Sources["legends-za"].Areas.Contains("Wild Zone 3"), "Z-A route extraction returns Wild Zone 3.");
+foreach (string id in new[] { "tauros-paldea-blaze-breed", "tauros-paldea-aqua-breed" })
+{
+    var breed = catalog.Pokemon.Single(p => p.Id == id);
+    Check(breed.Sources.Keys.Order().SequenceEqual(["scarlet", "violet"]), "National Tauros breeds have sources in both paired editions.");
+    Check(breed.Sources.Values.All(source => source.Url == "https://www.serebii.net/pokedex-sv/tauros/"), "Tauros breeds link to the species page rather than a nonexistent form URL.");
+}
+foreach (string game in new[] { "sword", "shield" })
+    Check(new[] { "mewtwo", "mew", "keldeo", "treecko", "cosmog", "naganadel", "regigigas" }.All(id => catalog.Pokemon.Single(p => p.Id == id).Sources.ContainsKey(game)), "National sources include native catches, gifts, breeding, and evolutions outside the Sword/Shield numbered lists.");
+foreach (string game in new[] { "sword", "shield" })
+{
+    var source = catalog.Pokemon.Single(p => p.Id == "mewtwo").Sources[game];
+    Check(source.Areas.SequenceEqual(["Max Lair"]) && source.Method == "Dynamax Adventures", "Mewtwo has its permanent Max Lair encounter rather than a historical event.");
+}
+Check(!catalog.Pokemon.Single(p => p.Id == "mew").Sources.ContainsKey("scarlet") && !catalog.Pokemon.Single(p => p.Id == "mew").Sources.ContainsKey("violet"), "National excludes expired SV Mew distribution outside its numbered Dex.");
+foreach (string game in new[] { "scarlet", "violet" })
+    Check(new[] { "rayquaza", "kyogre", "kubfu", "urshifu" }.All(id => catalog.Pokemon.Single(p => p.Id == id).Sources.ContainsKey(game)), "National sources include Snacksworth encounters and native evolution outside the SV numbered lists.");
 Check(catalog.Pokemon.Single(p => p.Id == "growlithe-hisui").Sources["scarlet"].Method == "Perrin's reward", "Regional gift overrides do not show ordinary encounters.");
 Check(catalog.Pokemon.Single(p => p.Id == "basculin-white-striped").Sources["scarlet"].Areas.SequenceEqual(["Timeless Woods"]), "White-striped Basculin does not inherit ordinary Paldea encounters.");
 Check(catalog.Pokemon.Single(p => p.Id == "vulpix-alola").Sources["scarlet"].Areas.Contains("Polar Biome") && !catalog.Pokemon.Single(p => p.Id == "vulpix-alola").Sources["scarlet"].Areas.Contains("Kitakami Road"), "Alolan Vulpix uses its own encounter region.");

@@ -48,7 +48,7 @@ Sources: [Nextcloud WebDAV API](https://docs.nextcloud.com/server/stable/develop
 
 ## User-selected folder and Syncthing
 
-The folder provider uses the browser's read/write directory picker. The user grants access to an ordinary filesystem directory that Syncthing or another tool synchronizes. Current compatibility data lists support in desktop Chrome and Edge and Chrome on Android; Firefox and Safari, including iOS, do not support that picker. Detect support at runtime and handle permission renewal.
+The folder provider uses the browser's read/write directory picker. The user grants access to an ordinary filesystem directory that Syncthing or another tool synchronizes. Current compatibility data lists support in desktop Chrome and Edge and Chrome on Android; Firefox and Safari, including iOS, do not support that picker. Detect folder access and Web Locks support at runtime and handle permission renewal. Without Web Locks, folder sync is disabled; local tracking and backups remain available.
 
 Syncthing's REST API manages its synchronization service and exposes metadata; it is not a general file-content storage API. The browser should write to the selected folder rather than use that API as a storage backend.
 
@@ -66,13 +66,13 @@ Sources: [Chrome filesystem guide](https://developer.chrome.com/docs/capabilitie
 
 Keep tracker behavior and reconciliation independent of storage-provider APIs. A provider is responsible for its authentication, configuration, and storage operations. A shared synchronization format should preserve concurrent versions on providers that lack conditional replacement.
 
-Jeff rejected snapshot history. The selected format has one current JSON file per tracker, with an edit timestamp and a SHA-256 content hash in its filename. Each device remembers the filenames and time of its last successful synchronization.
+Jeff rejected snapshot history. The selected format has one current JSON file per tracker, with an edit timestamp in its data and a SHA-256 content hash in its filename. Each device remembers the filenames and time of its last successful synchronization.
 
 A save freezes the content and expected candidates, verifies the baseline, creates a new hash filename, rereads it, and removes only acknowledged old files whose byte hashes still match. A final scan verifies the surviving file's name and content hash. Concurrent app saves therefore produce separate candidates rather than overwriting each other's bytes. Unexpected copies survive and require a per-tracker choice. The provider reports that arbitrary external replacements cannot be checked atomically.
 
 Jeff chose removal-based deletion. Other devices ask whether to accept a missing synchronized file or retain and recreate their local tracker. Cleared local deletion markers recognize late-arriving states without retaining a checklist or adding folder tombstones.
 
-IndexedDB persists current local data, pending changes, baselines, and folder handles where supported. A revision check rejects stale local saves from another tab; a stale tab blocks further edits and folder operations until it reloads.
+IndexedDB persists current local data, pending changes, baselines, and folder handles where supported. Local saves and folder mutations share the same Web Lock. Folder commits recheck the local revision while holding it, and local saves wait for the commit to finish. A revision check rejects stale local saves from another tab; a stale tab blocks further edits and folder operations until it reloads.
 Sources: [browser writer locking](https://developer.chrome.com/blog/new-dev-trial-for-multiple-readers-and-writers/#exclusive-writer-for-filesystemwritablefilestream), [filesystem standard on external changes](https://fs.spec.whatwg.org/#file-system-entry), [Syncthing conflicts](https://docs.syncthing.net/users/syncing.html#conflicting-changes).
 
 ## Verification status

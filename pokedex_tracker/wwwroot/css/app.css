@@ -172,16 +172,26 @@ dialog input, dialog select { width: 100%; }
     .box-heading { gap: 8px; margin-bottom: 12px; }
     .box-heading h2 { font-size: 18px; }
     .box-heading > span { font-size: 12px; }
-    .box-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .pokemon-check { padding: 44px 4px 8px; }
-    .pokemon-check img { width: 48px; height: 48px; margin-bottom: 0; }
-    .slot-number { position: static; order: 2; margin: 4px 0; }
-    .pokemon-check img { order: 1; }
-    .pokemon-name { order: 3; }
-    .form-label { order: 4; }
-    .empty-slot { min-height: 168px; }
+    .box-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .pokemon-slot { min-height: 80px; }
+    .pokemon-check { display: grid; grid-template-columns: 44px 40px minmax(0, 1fr); column-gap: 4px; align-content: center; min-height: 80px; padding: 8px 44px 8px 0; }
+    .check-target { position: static; grid-column: 1; grid-row: 1 / 4; height: 100%; }
+    .pokemon-check img { grid-column: 2; grid-row: 1 / 4; width: 40px; height: 40px; margin: 0; }
+    .slot-number { position: static; grid-column: 3; grid-row: 1; }
+    .pokemon-name { grid-column: 3; grid-row: 2; text-align: left; justify-content: flex-start; min-height: 0; }
+    .form-label { grid-column: 3; grid-row: 3; text-align: left; }
+    .form-label:empty { display: none; }
+    .pokemon-slot .info-button { top: 50%; transform: translateY(-50%); }
+    .empty-slot { display: none; }
     .welcome { margin: 24px 0; }
     dialog { padding: 20px; }
+}
+
+@media (max-width: 359px) {
+    .main-content { padding: 24px 8px; }
+    .pokemon-box { padding: 12px 8px; }
+    .pokemon-check { grid-template-columns: 44px 32px minmax(0, 1fr); }
+    .pokemon-check img { width: 32px; height: 32px; }
 }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
@@ -196,6 +206,14 @@ dialog input, dialog select { width: 100%; }
 .sources-panel .info-heading > div { min-width: 0; }
 .sources-panel h2, .sources-panel p, .sources-panel a { overflow-wrap: anywhere; }
 .sources-panel .acquisition a { display: inline-flex; align-items: center; min-height: 44px; }
-@container (max-width: 700px) { .box-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@container (max-width: 400px) { .box-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }
+@media (min-width: 720px) {
+    @container (max-width: 700px) {
+        .pokemon-box { padding: 12px; overflow-x: auto; }
+        .box-grid { grid-template-columns: repeat(var(--columns), minmax(90px, 1fr)); gap: 8px; }
+        .slot-number { position: static; order: 1; margin: 4px 0; }
+        .pokemon-check img { order: 0; }
+        .pokemon-name { order: 2; }
+        .form-label { order: 3; }
+    }
+}
 @media (max-width: 1179px) { .sources-panel { width: min(320px, calc(100% - 64px)); } }

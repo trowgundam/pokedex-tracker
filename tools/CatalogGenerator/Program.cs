@@ -15,8 +15,12 @@ using HttpClient client = new() { Timeout = TimeSpan.FromSeconds(45) };
 client.DefaultRequestHeaders.UserAgent.ParseAdd("PokedexTrackerCatalog/1.0");
 const string dataCommit = "bc92d3b6029ef1abe9e7ad424c400b338f3c11fe";
 const string spriteCommit = "a3a1432e688ea028f12c51371d5253037cb9f17b";
+string dataCache = Path.Combine(cache, "pokeapi", dataCommit);
+string spriteCache = Path.Combine(cache, "sprites", spriteCommit);
+Directory.CreateDirectory(dataCache);
+Directory.CreateDirectory(spriteCache);
 foreach (string name in new[] { "pokemon", "pokemon_species", "pokemon_species_names", "pokemon_dex_numbers" })
-    await Download($"https://raw.githubusercontent.com/PokeAPI/pokeapi/{dataCommit}/data/v2/csv/{name}.csv", Path.Combine(cache, name + ".csv"));
+    await Download($"https://raw.githubusercontent.com/PokeAPI/pokeapi/{dataCommit}/data/v2/csv/{name}.csv", Path.Combine(dataCache, name + ".csv"));
 Dictionary<int, string> serebiiSlugs = [];
 foreach (string era in new[] { "swsh", "sv" })
 {
@@ -109,9 +113,21 @@ Combine("swsh-complete", "Complete", "Sword / Shield", "galar", "isle-of-armor",
 Combine("sv-complete", "Complete", "Scarlet / Violet", "paldea", "kitakami", "blueberry");
 Combine("za-complete", "Complete", "Legends: Z-A", "lumiose", "hyperspace");
 
+string[] availabilityPages = ["https://www.serebii.net/swordshield/dynamaxadventurespokemon.shtml", "https://www.serebii.net/scarletviolet/snacksworthlegendary.shtml"];
+var adventures = await ListedSpecies(availabilityPages[0], "swsh");
+adventures.AddRange(["treecko", "torchic", "mudkip", "mew", "cosmog", "cosmoem", "poipole", "naganadel", "keldeo", "regigigas"]);
+var snacksworth = await ListedSpecies(availabilityPages[1], "sv");
+snacksworth.Add("urshifu");
+Dictionary<string, List<string>> sourceOnly = new()
+{
+    ["Sword / Shield"] = adventures,
+    ["Scarlet / Violet"] = snacksworth
+};
 Console.WriteLine($"Catalog: {games.Count} editions, {dexes.Count} lists, {pokemon.Count} identities. Fetching factual location records...");
 var requests = games.Where(g => g.Id != "home").SelectMany(game => dexes.Where(d => d.Group == game.Group)
-    .SelectMany(d => d.Entries).Select(e => pokemon[e.PokemonId]).DistinctBy(p => p.Id).Select(p => (Game: game, Pokemon: p)))
+    .SelectMany(d => d.Entries).Select(e => pokemon[e.PokemonId])
+    .Concat((sourceOnly.GetValueOrDefault(game.Group) ?? []).Select(id => pokemon[id]))
+    .DistinctBy(p => p.Id).Select(p => (Game: game, Pokemon: p)))
     .GroupBy(pair => SourceUrl(pair.Game, pair.Pokemon)).ToList();
 await Parallel.ForEachAsync(requests, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (group, _) =>
 {
@@ -164,6 +180,11 @@ await Parallel.ForEachAsync(requests, new ParallelOptions { MaxDegreeOfParalleli
                     if (area.Length > 0 && area != "Details" && area != "Map" && !anchor.Groups[1].Value.Contains("hyperspace/")) areas.Add(area);
                 }
             string plain = Text(body);
+            if (pair.Game.Group == "Sword / Shield" && plain.Contains("Dynamax Adventures", StringComparison.OrdinalIgnoreCase))
+            {
+                areas.Add("Max Lair");
+                methods.Add("Dynamax Adventures");
+            }
             foreach (var rule in new[] { ("Evolve", "Evolution"), ("Trade", "Trade"), ("Transfer", "Transfer"), ("Gift", "Gift"), ("Given", "Gift"), ("Obtained", "Gift"), ("Starter", "Starter"), ("Event", "Event"), ("Raid", "Raid battles"), ("Breed", "Breeding"), ("Hatch", "Breeding"), ("Egg", "Breeding"), ("Not available", "Unavailable"), ("Not in", "Unavailable"), ("Fossil", "Fossil revival"), ("Revive", "Fossil revival"), ("Receive", "Gift"), ("Purchase", "Purchase"), ("Buy", "Purchase"), ("Coins", "Game Corner prize"), ("Fish Everywhere", "Fishing throughout Kanto") })
                 if (plain.Contains(rule.Item1, StringComparison.OrdinalIgnoreCase)) methods.Add(rule.Item2);
             if (areas.Count == 0 && pair.Game.Group == "FireRed / LeafGreen")
@@ -181,6 +202,8 @@ await Parallel.ForEachAsync(requests, new ParallelOptions { MaxDegreeOfParalleli
         }
         // These checklists are native-only; transfer is not an acquisition source.
         methods.Remove("Transfer");
+        if (!dexes.Any(d => d.Group == pair.Game.Group && d.Entries.Any(entry => !entry.Extra && entry.PokemonId == pair.Pokemon.Id)))
+            methods.Remove("Event");
         AcquisitionSource source = new(areas.Distinct().ToList(), methods.Count == 0 ? (areas.Count > 0 ? "Encounter" : "See Serebii for availability") : string.Join(" / ", methods.Order()), url);
         lock (pair.Pokemon.Sources) pair.Pokemon.Sources[pair.Game.Id] = source;
     }
@@ -204,7 +227,7 @@ foreach (var p in pokemon.Values.Where(p => p.Form == "Alolan"))
                 maxLair ? "Diglett reward / Dynamax Adventures / breeding or evolution" : "Diglett reward / breeding or evolution", SourceUrl(game, p));
         }
 }
-foreach (var game in games.Where(g => g.Group == "Let's Go"))
+foreach (var game in games.Where(g => g.Group is "Let's Go" or "Sword / Shield"))
     pokemon["mew"].Sources[game.Id] = new([], "Poké Ball Plus Mystery Gift", SourceUrl(game, pokemon["mew"]));
 foreach (var game in games.Where(g => g.Group == "FireRed / LeafGreen"))
 {
@@ -236,6 +259,14 @@ foreach (string gameId in new[] { "scarlet", "violet" })
     pokemon["persian-alola"].Sources[gameId] = new([], "Evolve Alolan Meowth", SourceUrl(game, pokemon["persian-alola"]));
     var ordinaryTauros = pokemon["tauros"].Sources[gameId];
     pokemon["tauros"].Sources[gameId] = ordinaryTauros with { Areas = ordinaryTauros.Areas.Prepend("Kitakami").Distinct().ToList(), Method = "Breed Paldean Tauros in Kitakami / encounter in the Savanna Biome" };
+    // National-only breed entries still need native sources, independently of regional membership.
+    foreach (string breed in new[] { "blaze", "aqua" })
+    {
+        var variant = pokemon[$"tauros-paldea-{breed}-breed"];
+        bool nativeEdition = breed == "blaze" ? gameId == "scarlet" : gameId == "violet";
+        variant.Sources[gameId] = new(nativeEdition ? ["Asado Desert", "East Province Area Two", "East Province Area Three", "West Province Area Two"] : [],
+            nativeEdition ? "Encounter" : $"Trade from {(breed == "blaze" ? "Scarlet" : "Violet")}", SourceUrl(game, variant));
+    }
 }
 foreach (var game in games.Where(g => g.Group == "Sword / Shield"))
 {
@@ -272,14 +303,28 @@ foreach (string game in new[] { "scarlet", "violet" })
 Catalog catalog = new() { Version = "2026-10-04.2", Games = games, Pokemon = pokemon.Values.OrderBy(p => p.NationalNumber).ThenBy(p => p.Id).Select(p => p with { Sources = p.Sources.OrderBy(pair => pair.Key).ToDictionary(pair => pair.Key, pair => pair.Value) }).ToList(), Dexes = dexes };
 await File.WriteAllTextAsync(Path.Combine(output, "data/catalog.json"), JsonSerializer.Serialize(catalog, TrackerJson.Options));
 await Parallel.ForEachAsync(catalog.Pokemon, new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (p, _) =>
-    await Download($"https://raw.githubusercontent.com/PokeAPI/sprites/{spriteCommit}/sprites/pokemon/{p.SpriteId}.png", Path.Combine(output, "sprites", p.SpriteId + ".png")));
-await File.WriteAllTextAsync(Path.Combine(output, "data/provenance.json"), JsonSerializer.Serialize(new { GeneratedUtc = DateTimeOffset.UtcNow, PokeApiCommit = dataCommit, SpritesCommit = spriteCommit, Sources = requests.Select(g => g.Key).Concat(catalog.Pokemon.SelectMany(p => p.Sources.Values).Select(source => source.Url)).Distinct().Order().ToArray() }, TrackerJson.Options));
+{
+    string path = Path.Combine(spriteCache, p.SpriteId + ".png");
+    await Download($"https://raw.githubusercontent.com/PokeAPI/sprites/{spriteCommit}/sprites/pokemon/{p.SpriteId}.png", path);
+    File.Copy(path, Path.Combine(output, "sprites", p.SpriteId + ".png"), overwrite: true);
+});
+await File.WriteAllTextAsync(Path.Combine(output, "data/provenance.json"), JsonSerializer.Serialize(new { GeneratedUtc = DateTimeOffset.UtcNow, PokeApiCommit = dataCommit, SpritesCommit = spriteCommit, Sources = requests.Select(g => g.Key).Concat(availabilityPages).Concat(catalog.Pokemon.SelectMany(p => p.Sources.Values).Select(source => source.Url)).Distinct().Order().ToArray() }, TrackerJson.Options));
 Console.WriteLine("Catalog and local sprites written.");
 
 int Number(string value) => int.Parse(value, CultureInfo.InvariantCulture);
+async Task<List<string>> ListedSpecies(string url, string era)
+{
+    string path = Path.Combine(cache, TrackerJson.Hash(url) + ".html");
+    await Download(url, path);
+    string html = await File.ReadAllTextAsync(path, System.Text.Encoding.Latin1);
+    var speciesBySlug = slugs.Values.ToDictionary(id => SerebiiSlug(pokemon[id]), id => id);
+    return Regex.Matches(html, $"href=\"/pokedex-{era}/([^\"/]+)/?\"")
+        .Select(match => speciesBySlug.GetValueOrDefault(match.Groups[1].Value)).OfType<string>()
+        .Distinct(StringComparer.Ordinal).ToList();
+}
 List<Dictionary<string, string>> Csv(string name)
 {
-    using TextFieldParser parser = new(Path.Combine(cache, name + ".csv"));
+    using TextFieldParser parser = new(Path.Combine(dataCache, name + ".csv"));
     parser.SetDelimiters(","); parser.HasFieldsEnclosedInQuotes = true;
     string[] headers = parser.ReadFields()!;
     List<Dictionary<string, string>> result = [];

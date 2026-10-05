@@ -18,7 +18,7 @@ Install the SDK specified by `global.json`, then run:
 dotnet run --project pokedex_tracker
 ```
 
-The console prints the development URL. Folder access requires a secure context and a browser that exposes the File System Access API. Brave can disable this API. If it is unavailable, local tracking and backup import/export still work.
+The console prints the development URL. Folder access requires a secure context and a browser that exposes the File System Access API and Web Locks. Brave can disable this API. If it is unavailable, local tracking and backup import/export still work.
 
 ## Use folder sync
 
@@ -40,6 +40,7 @@ dotnet run --project tools/Checks -- .
 node --check pokedex_tracker/wwwroot/app.js
 node --check pokedex_tracker/wwwroot/layout.js
 node --check tools/browser-checks.js
+node --check tools/browser-sync-checks.js
 node --check tools/browser-ui-checks.js
 node --check tools/browser-catalog-checks.js
 node --check tools/browser-theme-checks.js
@@ -53,6 +54,8 @@ Serve the prepared output beneath the same `/pokedex-tracker/` path when testing
 The [Pages workflow](.github/workflows/pages.yml) validates and deploys `main` to GitHub Pages. Set the repository's Pages source to **GitHub Actions**. Pull requests run the build without deployment.
 
 The [browser filesystem checks](tools/browser-checks.js) run in a disposable local preview origin's console. They use real IndexedDB and file handles in OPFS, substituting only the operating-system directory picker. They do not prove a particular browser's native picker or external Syncthing delivery.
+
+The [sync interface checks](tools/browser-sync-checks.js) drive tracker creation, unchanged sync, corrupt-file conflict resolution, and deletion through the real Blazor interface. They use real IndexedDB and isolated OPFS files and require an empty disposable preview origin.
 
 The [interface checks](tools/browser-ui-checks.js) drive real Blazor DOM events for tracker navigation, Settings, creation, acquisition information, filtering, all theme choices, independence, rename, reset, and deletion. They create and remove their own verification trackers. Run them only in a disposable local preview origin.
 

@@ -13,7 +13,7 @@ This document records Jeff's confirmed requirements. Open decisions remain separ
 - Keep storage providers modular so adding Google Drive or another provider later does not require sweeping changes to tracker behavior.
 - Use one active sync provider at a time.
 - Jeff prefers FOSS options where practical. External software such as Syncthing can synchronize the selected folder.
-- Jeff primarily uses Brave on his laptop and desktop. His Brave does not expose the expected configuration flag. Folder support remains capability-dependent; provide local tracking and backups when unavailable. Do not change his browser configuration.
+- Jeff primarily uses Brave on his laptop and desktop. His Brave does not expose the expected configuration flag. Folder sync requires a secure context, read/write folder access, and Web Locks. Folder support remains capability-dependent; provide local tracking and backups when unavailable. Do not change his browser configuration.
 - Work on `main`. Do not create another branch or worktree for this initial project.
 
 ## Synchronization
@@ -25,7 +25,7 @@ This document records Jeff's confirmed requirements. Open decisions remain separ
 - Detect and resolve conflicts per tracker. Editing unrelated trackers on different devices does not create a conflict between those trackers.
 - Support editing an already-open page offline and reopening the application offline after its first successful online visit.
 - Store one current state file per tracker. Do not create an application-managed snapshot history.
-- Include the last edit timestamp and a content hash in each current file's name. Warn when the contents do not match that hash.
+- Store the last edit timestamp in the tracker data and include a content hash in each current file's name. Warn when the contents do not match that hash.
 - Delete synchronized files without a folder tombstone. Other devices ask whether to accept deletion or retain and recreate their local tracker.
 - Synchronization is explicit through Sync now. Remember browser folder handles where possible and renew access when required.
 
@@ -45,7 +45,7 @@ Other generations will be added later. The catalog must support every Pokédex a
 
 Game and DLC checklists cover only Pokémon that can originate there. Encounters, permanent gifts, in-game trades, breeding, evolution, and trading between paired editions qualify. Transfer-only entries do not qualify, including imported Pokémon subsequently traded to another player. Scope follows the required game or DLC content, even when a DLC quest sends a Pokémon to a base-game area. A DLC checklist can use base-game facilities for breeding and evolution.
 
-Retain numbered entries from expired in-game event distributions, including Walking Wake, Iron Leaves, Zarude, and BDSP Manaphy. Exclude event-only extra regional forms. The full cross-game National Pokédex remains a checklist of every Pokémon, regardless of individual games' availability.
+Retain numbered entries from expired in-game event distributions, including Walking Wake, Iron Leaves, Zarude, and BDSP Manaphy. Exclude event-only extra regional forms. The full cross-game National Pokédex remains a checklist of every Pokémon, regardless of individual games' availability. Its game-source rankings exclude expired distributions outside that game's numbered Dex; permanent gifts and encounters outside numbered lists qualify.
 
 ## Checklists
 
@@ -53,10 +53,10 @@ Retain numbered entries from expired in-game event distributions, including Walk
 - Creating a tracker creates independent progress. Changes never automatically mark entries in another tracker.
 - A checkbox has no enforced interpretation. Users can use it for Pokédex completion, a living dex, or another purpose.
 - Users can reset a tracker or create another tracker when changing their collection goal.
-- Each game uses its own storage box layout. Scarlet and Violet use 30 slots arranged as five rows of six.
+- Each game uses its own storage box layout. Scarlet and Violet use 30 slots arranged as five rows of six. Tablets and desktop views preserve these dimensions; only the phone list below changes the visual arrangement.
 - The National Pokédex uses the Pokémon HOME box layout.
 - Games without ordinary boxes, including Let's Go, use the Pokémon HOME box layout.
-- On phones, use a list separated by box boundaries, with a group header every 30 entries for HOME-sized boxes.
+- On phones, show one Pokémon per row in a list separated by box boundaries, with a group header every 30 entries for HOME-sized boxes.
 - Include naming, renaming, duplicating, resetting, deleting, searching, checked/unchecked filtering, and backup export/import. Preserve box positions when searching or filtering. Reset and delete require confirmation.
 - Provide an information action for each Pokémon to find acquisition sources, following the reference site's interaction.
 - Acquisition information lists route or area names by game and links to Serebii for details. Detailed encounter rates and walkthroughs are outside the initial scope.

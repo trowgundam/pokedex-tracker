@@ -3,6 +3,10 @@ let directory;
 let localRevision = 0;
 const filenamePattern = /^tracker-([a-f0-9]{32})-([a-f0-9]{64})(?:[.-].*)?\.json$/i;
 
+function withTrackerLock(action) {
+    return navigator.locks ? navigator.locks.request('pokedex-folder-sync', action) : action();
+}
+
 function database() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(databaseName, 1);
@@ -38,41 +42,49 @@ export async function loadLocal() {
     return value?.content ?? '[]';
 }
 export async function saveLocal(content) {
-    const db = await database();
-    try {
-        await new Promise((resolve, reject) => {
-            const transaction = db.transaction('settings', 'readwrite');
-            const store = transaction.objectStore('settings');
-            const request = store.get('trackers');
-            let conflict = false;
-            request.onsuccess = () => {
-                if ((request.result?.revision ?? 0) !== localRevision) {
-                    conflict = true;
-                    transaction.abort();
-                } else store.put({ revision: localRevision + 1, content }, 'trackers');
-            };
-            transaction.oncomplete = () => { localRevision++; resolve(); };
-            transaction.onabort = transaction.onerror = () => reject(new Error(conflict
-                ? 'Another tab changed your trackers. Reload this tab before editing to protect those changes.'
-                : 'Could not save on this device. Your changes are still visible; export a backup before closing.'));
-        });
-    } finally { db.close(); }
+    return withTrackerLock(async () => {
+        const db = await database();
+        try {
+            await new Promise((resolve, reject) => {
+                const transaction = db.transaction('settings', 'readwrite');
+                const store = transaction.objectStore('settings');
+                const request = store.get('trackers');
+                let conflict = false;
+                request.onsuccess = () => {
+                    if ((request.result?.revision ?? 0) !== localRevision) {
+                        conflict = true;
+                        transaction.abort();
+                    } else store.put({ revision: localRevision + 1, content }, 'trackers');
+                };
+                transaction.oncomplete = () => { localRevision++; resolve(); };
+                transaction.onabort = transaction.onerror = () => reject(new Error(conflict
+                    ? 'Another tab changed your trackers. Reload this tab before editing to protect those changes.'
+                    : 'Could not save on this device. Your changes are still visible; export a backup before closing.'));
+            });
+        } finally { db.close(); }
+    });
 }
 export async function validateLocal() {
     if (((await readSetting('trackers'))?.revision ?? 0) !== localRevision)
         throw new Error('Another tab changed your trackers. Reload this tab before editing to protect those changes.');
 }
+function requireFolderSupport() {
+    if (!capabilities().folder)
+        throw new Error('Folder sync requires a secure connection, folder access, and Web Locks. Local tracking and backups remain available.');
+}
 export function capabilities() {
-    return { folder: typeof window.showDirectoryPicker === 'function' && window.isSecureContext,
+    return { folder: typeof window.showDirectoryPicker === 'function' && window.isSecureContext && typeof navigator.locks?.request === 'function',
         online: navigator.onLine, persistent: !!navigator.storage?.persist };
 }
 export async function chooseFolder() {
+    requireFolderSupport();
     const next = await window.showDirectoryPicker({ mode: 'readwrite', id: 'pokedex-trackers' });
     await writeSetting('folder', next);
     directory = next;
     return directory.name;
 }
 export async function reconnectFolder() {
+    requireFolderSupport();
     directory ??= await readSetting('folder');
     if (!directory) return null;
     if (await directory.queryPermission({ mode: 'readwrite' }) !== 'granted' &&
@@ -99,6 +111,7 @@ async function readFile(name, handle) {
         integrityValid: !!match && match[2].toLowerCase() === hash, filenameId: match?.[1].toLowerCase() ?? null };
 }
 export async function listFolder() {
+    requireFolderSupport();
     if (!directory) throw new Error('Connect a folder first.');
     const result = [];
     for await (const [name, handle] of directory.entries()) {
@@ -122,8 +135,10 @@ function tokens(files) {
     return files.map(file => `${file.fileName}:${file.hash}`).sort().join('|');
 }
 export async function commitFolder(id, expected, name, content) {
+    requireFolderSupport();
     if (!directory) throw new Error('Connect a folder first.');
     const perform = async () => {
+        await validateLocal();
         let current = matching(await listFolder(), id);
         if (tokens(current) !== tokens(expected)) throw new Error('The folder changed during synchronization. Sync again to review the conflict.');
         if (name) {
@@ -133,10 +148,15 @@ export async function commitFolder(id, expected, name, content) {
             let existing;
             try { existing = await directory.getFileHandle(name); }
             catch (error) { if (error.name !== 'NotFoundError') throw error; }
+            let needsWrite = !existing;
             if (existing) {
-                if ((await readFile(name, existing)).hash !== hash) throw new Error('An existing file has a mismatched hash. It was preserved.');
-            } else {
-                const handle = await directory.getFileHandle(name, { create: true });
+                const actual = await readFile(name, existing);
+                needsWrite = actual.hash !== hash;
+                if (needsWrite && !expected.some(file => file.fileName === name && file.hash === actual.hash))
+                    throw new Error('An existing file has a mismatched hash that was not acknowledged. It was preserved.');
+            }
+            if (needsWrite) {
+                const handle = existing ?? await directory.getFileHandle(name, { create: true });
                 const writer = await handle.createWritable({ mode: 'exclusive' });
                 try { await writer.write(bytes); await writer.close(); }
                 catch (error) { await writer.abort().catch(() => {}); throw error; }
@@ -144,8 +164,8 @@ export async function commitFolder(id, expected, name, content) {
             }
         }
         current = matching(await listFolder(), id);
-        const allowed = [...expected];
-        if (name && !allowed.some(file => file.fileName === name))
+        const allowed = expected.filter(file => file.fileName !== name);
+        if (name)
             allowed.push({ fileName: name, hash: await digest(new TextEncoder().encode(content)) });
         if (tokens(current) !== tokens(allowed)) throw new Error('Another version arrived during the save. Both versions were preserved; sync again.');
         for (const file of expected) {
@@ -163,8 +183,9 @@ export async function commitFolder(id, expected, name, content) {
             throw new Error('Another version arrived during cleanup. Sync again to review it.');
         return remaining;
     };
-    // Serializes tabs on this origin, not external folder synchronization tools.
-    return navigator.locks ? navigator.locks.request('pokedex-folder-sync', perform) : perform();
+    // Local saves and folder mutations share the revision lock across tabs.
+    // External folder synchronization tools do not participate in this lock.
+    return withTrackerLock(perform);
 }
 export function setColorScheme(scheme) {
     document.documentElement.dataset.colorScheme = scheme;

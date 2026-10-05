@@ -141,6 +141,9 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
                         await SaveToProviderAsync(snapshot, remote); break;
                     case SyncDecision.Unchanged when remote.Count > 1:
                         await SaveToProviderAsync(snapshot, remote); break;
+                    case SyncDecision.Unchanged:
+                        Trackers[Index(snapshot.State.Id)] = snapshot with { LastSyncedUtc = DateTimeOffset.UtcNow };
+                        break;
                 }
             }
             catch (JSException ex)

@@ -51,6 +51,16 @@ async function runPokedexSourceChecks() {
     const counts = games.map(row => Number(row.querySelector('.location-count').textContent.split(' ')[0]));
     check(counts.every((value, index) => !index || counts[index - 1] >= value), 'National games rank by outstanding Pokémon.');
     const scarlet = document.querySelector('.source-location[data-game="scarlet"]'); scarlet.open = true;
+    check(['tauros-paldea-blaze-breed', 'tauros-paldea-aqua-breed'].every(id => scarlet.querySelector(`[data-pokemon="${id}"]`) && document.querySelector(`.source-location[data-game="violet"] [data-pokemon="${id}"]`)), 'Both National Tauros breeds appear in paired-game rankings.');
+    check(['rayquaza', 'kyogre', 'urshifu'].every(id => scarlet.querySelector(`[data-pokemon="${id}"]`)), 'National sources include permanent encounters and evolutions outside numbered SV lists.');
+    check(['mewtwo', 'mew', 'keldeo', 'treecko', 'cosmog', 'naganadel'].every(id => document.querySelector(`.source-location[data-game="sword"] [data-pokemon="${id}"]`)), 'National sources include native Sword gifts and encounters outside numbered lists.');
+    check(!scarlet.querySelector('[data-pokemon="mew"]'), 'Expired SV Mew distribution outside its numbered Dex is excluded.');
+    const sword = document.querySelector('.source-location[data-game="sword"]'); sword.open = true;
+    sword.querySelector('[data-pokemon="mewtwo"] .source-info').click();
+    await wait(() => document.querySelector('#info-title')?.textContent === 'Mewtwo');
+    const swordInfo = [...document.querySelectorAll('#sources-panel .acquisition')].find(section => section.querySelector('h3').textContent === 'Sword');
+    check(swordInfo.textContent.includes('Max Lair') && swordInfo.querySelector('.muted').textContent === 'Dynamax Adventures', 'Mewtwo information shows its permanent Sword encounter without an expired event.');
+    click('[aria-label="Close sources"]'); await wait(() => !document.querySelector('#sources-panel'));
     const initial = Number(scarlet.querySelector('.location-count').textContent.split(' ')[0]);
     scarlet.querySelector('[data-pokemon="perrserker"] label').click();
     await wait(() => Number(document.querySelector('.source-location[data-game="scarlet"] .location-count').textContent.split(' ')[0]) === initial - 1 && !document.querySelector('.create-tracker').disabled);
