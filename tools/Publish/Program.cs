@@ -34,4 +34,11 @@ string worker = File.ReadAllText(workerPath);
 Regex import = new(@"self\.importScripts\('\./service-worker-assets\.js(?:\?v=[a-f0-9]+)?'\);");
 if (!import.IsMatch(worker)) throw new InvalidDataException("The service worker manifest import is missing.");
 File.WriteAllText(workerPath, import.Replace(worker, $"self.importScripts('./service-worker-assets.js?v={json["version"]!.GetValue<string>()}');", 1), new UTF8Encoding(false));
-Console.WriteLine($"Prepared {basePath} with updated offline-cache integrity.");
+foreach (JsonNode? node in assets)
+{
+    string url = node!["url"]!.GetValue<string>();
+    string actual = "sha256-" + Convert.ToBase64String(SHA256.HashData(File.ReadAllBytes(Path.Combine(root, url))));
+    if (actual != node["hash"]!.GetValue<string>())
+        throw new InvalidDataException($"The published offline asset hash does not match: {url}");
+}
+Console.WriteLine($"Prepared {basePath} and verified {assets.Count} offline asset hashes.");

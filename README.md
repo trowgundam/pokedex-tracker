@@ -51,7 +51,7 @@ dotnet run --project tools/Publish -- artifacts/publish/wwwroot /pokedex-tracker
 
 Serve the prepared output beneath the same `/pokedex-tracker/` path when testing locally. The publish tool updates the base URL and service-worker integrity metadata together. The release service worker caches the app, catalog, and sprites so a successful first visit supports offline reopening. Development builds deliberately do not cache.
 
-The [Pages workflow](.github/workflows/pages.yml) validates and deploys `main` to GitHub Pages. Set the repository's Pages source to **GitHub Actions**. Pull requests run the build without deployment.
+The [Pages workflow](.github/workflows/pages.yml) validates and deploys `main` to GitHub Pages. Set the repository's Pages source to **GitHub Actions**. Pull requests run three independent checks: **Catalog and tracker checks**, **JavaScript syntax**, and **Release publish**. Release publication verifies every offline asset hash after preparing the repository path. Deployment waits for all checks to pass and runs only for `main`; PRs never deploy. Keep these check names stable because branch protection requires them. See [contribution requirements](CONTRIBUTING.md) for the `main` branch rules.
 
 The [browser filesystem checks](tools/browser-checks.js) run in a disposable local preview origin's console. They use real IndexedDB and file handles in OPFS, substituting only the operating-system directory picker. They do not prove a particular browser's native picker or external Syncthing delivery.
 
