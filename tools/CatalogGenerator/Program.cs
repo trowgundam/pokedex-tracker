@@ -77,6 +77,13 @@ AddRange("national", "National", "National", names.Keys.Max());
 
 Replace("hisui", "basculin", "basculin-white-striped");
 Replace("kitakami", "basculin", "basculin-white-striped");
+// Numbered membership is not proof that a Pokémon can originate in this release.
+Find("letsgo-kanto").Entries.RemoveAll(e => e.PokemonId is "meltan" or "melmetal");
+Find("bdsp-national").Entries.RemoveAll(e => e.PokemonId is "celebi" or "deoxys");
+HashSet<int> unavailableFrlgJohto = [152, 153, 154, 155, 156, 157, 158, 159, 160, 163, 164, 170, 171, 179, 180, 181, 185, 190, 191, 192, 196, 197, 203, 204, 205, 207, 209, 210, 213, 216, 217, 222, 228, 229, 234, 235, 241, 251];
+foreach (string id in new[] { "kanto", "frlg-national" })
+    Find(id).Entries.RemoveAll(e => pokemon[e.PokemonId].NationalNumber is 151 || unavailableFrlgJohto.Contains(pokemon[e.PokemonId].NationalNumber) ||
+        pokemon[e.PokemonId].NationalNumber is >= 252 and <= 385 and not (298 or 360));
 foreach (string id in new[] { "grimer", "muk", "geodude", "graveler", "golem", "sandshrew", "sandslash", "vulpix", "ninetales", "diglett", "dugtrio" }) Replace("blueberry", id, id + "-alola");
 foreach (string id in new[] { "slowpoke", "slowbro", "slowking" }) Replace("blueberry", id, id + "-galar");
 Replace("blueberry", "qwilfish", "qwilfish-hisui");
@@ -84,28 +91,19 @@ Replace("blueberry", "qwilfish", "qwilfish-hisui");
 // Explicit availability is reviewed independently of species-level dex membership.
 string[] alolaLetsGo = "rattata raticate raichu sandshrew sandslash vulpix ninetales diglett dugtrio meowth persian geodude graveler golem grimer muk exeggutor marowak".Split(' ');
 Extras("letsgo-kanto", alolaLetsGo.Select(id => id + "-alola"));
-string[] alolaSwsh = "raichu sandshrew sandslash vulpix ninetales diglett dugtrio meowth persian exeggutor marowak".Split(' ');
-foreach (string dexId in new[] { "galar", "isle-of-armor", "crown-tundra" })
-{
-    var species = Find(dexId).Entries.Select(entry => pokemon[entry.PokemonId].NationalNumber).ToHashSet();
-    Extras(dexId, pokemon.Values.Where(p => species.Contains(p.NationalNumber) && (p.Form == "" || p.Form == "Galarian" || alolaSwsh.Contains(slugs[p.NationalNumber]) && p.Form == "Alolan")).Select(p => p.Id));
-}
+// Galarian Slowking requires the Crown Tundra's Galarica Wreath. The Isle's
+// numbered slot can instead be filled by evolving its Diglett-reward Slowpoke.
+Replace("isle-of-armor", "slowking-galar", "slowking");
+Extras("galar", "meowth slowpoke-galar mr-mime yamask".Split(' '));
+Extras("isle-of-armor", "raichu-alola sandshrew-alola sandslash-alola vulpix vulpix-alola ninetales ninetales-alola diglett diglett-alola dugtrio dugtrio-alola meowth meowth-alola meowth-galar persian persian-alola ponyta ponyta-galar rapidash rapidash-galar slowpoke slowbro farfetchd farfetchd-galar exeggutor-alola marowak-alola weezing weezing-galar mr-mime mr-mime-galar corsola corsola-galar zigzagoon zigzagoon-galar linoone linoone-galar darumaka darumaka-galar darmanitan darmanitan-galar stunfisk stunfisk-galar obstagoon perrserker cursola sirfetchd mr-rime".Split(' '));
+Extras("crown-tundra", "raichu raichu-alola sandshrew sandshrew-alola sandslash sandslash-alola diglett diglett-alola dugtrio dugtrio-alola meowth meowth-alola meowth-galar persian persian-alola slowpoke slowpoke-galar slowbro farfetchd-galar marowak marowak-alola weezing weezing-galar mr-mime articuno zapdos moltres slowking slowking-galar corsola-galar zigzagoon linoone yamask yamask-galar cofagrigus stunfisk stunfisk-galar perrserker cursola sirfetchd runerigus".Split(' '));
 Extras("hisui", new[] { "sneasel", "vulpix-alola", "ninetales-alola" });
-Extras("paldea", new[] { "meowth-galar", "perrserker", "wooper", "quagsire", "tauros-paldea-blaze-breed", "tauros-paldea-aqua-breed" });
-var svCompatible = pokemon.Values.Where(p => p.Form.StartsWith("Paldean") || p.Form == "Hisuian" || p.Id == "basculin-white-striped" ||
-    p.Form == "Alolan" && !new[] { "rattata", "raticate", "marowak" }.Contains(slugs[p.NationalNumber]) ||
-    p.Form == "Galarian" && new[] { "meowth", "slowpoke", "slowbro", "slowking", "weezing", "articuno", "zapdos", "moltres" }.Contains(slugs[p.NationalNumber])).ToList();
-Dictionary<string, string> svEvolutions = new() { ["meowth-galar"] = "perrserker", ["qwilfish-hisui"] = "overqwil", ["sneasel-hisui"] = "sneasler", ["basculin-white-striped"] = "basculegion", ["wooper-paldea"] = "clodsire", ["wooper"] = "quagsire" };
-foreach (string dexId in new[] { "paldea", "kitakami", "blueberry" })
-{
-    var species = Find(dexId).Entries.Select(entry => pokemon[entry.PokemonId].NationalNumber).ToHashSet();
-    var eligible = svCompatible.Where(p => species.Contains(p.NationalNumber)).Select(p => p.Id)
-        .Concat(Find(dexId).Entries.Where(e => pokemon[e.PokemonId].Form.Length > 0).Select(e => slugs[pokemon[e.PokemonId].NationalNumber])).Distinct().ToList();
-    Extras(dexId, eligible);
-    Extras(dexId, eligible.Where(svEvolutions.ContainsKey).Select(id => svEvolutions[id]));
-}
+// Availability is scoped to the game/DLC, not HOME compatibility or species membership.
+Extras("paldea", new[] { "meowth-galar", "perrserker", "wooper", "quagsire" });
+Extras("kitakami", new[] { "growlithe-hisui", "arcanine-hisui", "tauros" });
+Extras("blueberry", new[] { "exeggutor-alola", "meowth-alola", "persian-alola" });
 Extras("national", pokemon.Values.Where(p => p.Form != "").OrderBy(p => p.NationalNumber).ThenBy(p => p.Id).Select(p => p.Id));
-Extras("lumiose", new[] { "raichu-alola", "slowpoke-galar", "slowbro-galar", "slowking-galar", "stunfisk-galar", "sliggoo-hisui", "goodra-hisui", "avalugg-hisui" });
+Extras("lumiose", new[] { "raichu-alola", "slowpoke-galar", "slowbro-galar", "slowking-galar", "stunfisk-galar" });
 Extras("hyperspace", new[] { "raichu-alola", "meowth-alola", "persian-alola", "marowak-alola", "meowth-galar", "slowpoke-galar", "slowbro-galar", "farfetchd-galar", "mr-mime-galar", "slowking-galar", "yamask-galar", "stunfisk-galar", "qwilfish-hisui", "sliggoo-hisui", "goodra-hisui", "avalugg-hisui" });
 Combine("swsh-complete", "Complete", "Sword / Shield", "galar", "isle-of-armor", "crown-tundra");
 Combine("sv-complete", "Complete", "Scarlet / Violet", "paldea", "kitakami", "blueberry");
@@ -181,7 +179,8 @@ await Parallel.ForEachAsync(requests, new ParallelOptions { MaxDegreeOfParalleli
                     if (plain.Contains(place, StringComparison.Ordinal)) areas.Add(place);
         }
         }
-        if (areas.Count == 0 && methods.Count == 0 && pair.Pokemon.Form.Length > 0) methods.Add("Transfer / regional evolution");
+        // These checklists are native-only; transfer is not an acquisition source.
+        methods.Remove("Transfer");
         AcquisitionSource source = new(areas.Distinct().ToList(), methods.Count == 0 ? (areas.Count > 0 ? "Encounter" : "See Serebii for availability") : string.Join(" / ", methods.Order()), url);
         lock (pair.Pokemon.Sources) pair.Pokemon.Sources[pair.Game.Id] = source;
     }
@@ -198,39 +197,83 @@ foreach (var p in pokemon.Values.Where(p => p.Form == "Alolan"))
             p.Sources[game.Id] = new(otherEdition ? [] : [letsGoTrades[species]], otherEdition ? "Trade from the other Let's Go edition" : "Alolan trade / evolution", SourceUrl(game, p));
         }
     foreach (var game in games.Where(g => g.Group == "Sword / Shield"))
-        if (p.Sources.ContainsKey(game.Id)) p.Sources[game.Id] = new(["Fields of Honor"], "Isle of Armor Diglett reward / evolution, or transfer", SourceUrl(game, p));
+        if (p.Sources.ContainsKey(game.Id))
+        {
+            bool maxLair = new[] { "raichu", "sandshrew", "sandslash", "diglett", "dugtrio", "meowth", "persian", "marowak" }.Contains(species);
+            p.Sources[game.Id] = new(maxLair ? ["Fields of Honor", "Max Lair"] : ["Fields of Honor"],
+                maxLair ? "Diglett reward / Dynamax Adventures / breeding or evolution" : "Diglett reward / breeding or evolution", SourceUrl(game, p));
+        }
+}
+foreach (var game in games.Where(g => g.Group == "Let's Go"))
+    pokemon["mew"].Sources[game.Id] = new([], "Poké Ball Plus Mystery Gift", SourceUrl(game, pokemon["mew"]));
+foreach (var game in games.Where(g => g.Group == "FireRed / LeafGreen"))
+{
+    foreach (string id in new[] { "lugia", "ho-oh", "deoxys" })
+        pokemon[id].Sources[game.Id] = new([id == "deoxys" ? "Birth Island" : "Navel Rock"], "Switch ticket encounter after entering the Hall of Fame", "https://www.serebii.net/fireredleafgreen/nintendoswitch.shtml");
 }
 foreach (string id in new[] { "vulpix-alola", "ninetales-alola" })
     pokemon[id].Sources["legends-arceus"] = new(["Snowfields Camp"], id == "vulpix-alola" ? "Request 83 reward" : "Evolve Alolan Vulpix", SourceUrl(games.Single(g => g.Id == "legends-arceus"), pokemon[id]));
-pokemon["raichu-alola"].Sources["legends-za"] = new(["Lumiose City"], "In-game trade / Hyperspace Lumiose", SourceUrl(games.Single(g => g.Id == "legends-za"), pokemon["raichu-alola"]));
-pokemon["slowpoke-galar"].Sources["legends-za"] = new(["Lumiose City", "Hyperspace Lumiose"], "In-game trade / encounter", SourceUrl(games.Single(g => g.Id == "legends-za"), pokemon["slowpoke-galar"]));
-pokemon["stunfisk-galar"].Sources["legends-za"] = new(["Lumiose City", "Hyperspace Lumiose"], "Gift / encounter", SourceUrl(games.Single(g => g.Id == "legends-za"), pokemon["stunfisk-galar"]));
+pokemon["raichu-alola"].Sources["legends-za"] = new(["Outside Quasartico Inc.", "Hyperspace Lumiose"], "In-game trade / encounter", SourceUrl(games.Single(g => g.Id == "legends-za"), pokemon["raichu-alola"]));
+pokemon["slowpoke-galar"].Sources["legends-za"] = new(["South Boulevard", "Hyperspace Lumiose"], "In-game trade / encounter", SourceUrl(games.Single(g => g.Id == "legends-za"), pokemon["slowpoke-galar"]));
+pokemon["stunfisk-galar"].Sources["legends-za"] = new(["Wild Zone 11", "Hyperspace Lumiose"], "Side Mission 72 reward / encounter", SourceUrl(games.Single(g => g.Id == "legends-za"), pokemon["stunfisk-galar"]));
 foreach (string gameId in new[] { "brilliant-diamond", "shining-pearl" })
+{
     pokemon["bellossom"].Sources[gameId] = new([], "Evolve Gloom", SourceUrl(games.Single(g => g.Id == gameId), pokemon["bellossom"]));
+    foreach (string id in new[] { "manaphy", "darkrai", "shaymin" })
+        pokemon[id].Sources[gameId] = new([], "Past in-game Mystery Gift / trade", SourceUrl(games.Single(g => g.Id == gameId), pokemon[id]));
+    pokemon["phione"].Sources[gameId] = new([], "Breed Manaphy with Ditto", SourceUrl(games.Single(g => g.Id == gameId), pokemon["phione"]));
+}
 foreach (string gameId in new[] { "scarlet", "violet" })
 {
     pokemon["gimmighoul"].Sources[gameId] = new(["Watchtowers and ruins across Paldea"], "Chest Form encounter", SourceUrl(games.Single(g => g.Id == gameId), pokemon["gimmighoul"]));
     var ordinaryWooper = pokemon["wooper"].Sources[gameId];
     pokemon["wooper"].Sources[gameId] = ordinaryWooper with { Areas = ordinaryWooper.Areas.Where(area => area != "South Province Area One").Prepend("Cascarrafa").Distinct().ToList() };
+    var game = games.Single(g => g.Id == gameId);
+    string academy = gameId == "scarlet" ? "Naranja Academy" : "Uva Academy";
+    pokemon["meowth-galar"].Sources[gameId] = new([academy], "Salvatore's gift", SourceUrl(game, pokemon["meowth-galar"]));
+    pokemon["perrserker"].Sources[gameId] = new([], "Evolve Galarian Meowth", SourceUrl(game, pokemon["perrserker"]));
+    pokemon["meowth-alola"].Sources[gameId] = new(["League Club Room"], "Trade with Salvatore", SourceUrl(game, pokemon["meowth-alola"]));
+    pokemon["persian-alola"].Sources[gameId] = new([], "Evolve Alolan Meowth", SourceUrl(game, pokemon["persian-alola"]));
+    var ordinaryTauros = pokemon["tauros"].Sources[gameId];
+    pokemon["tauros"].Sources[gameId] = ordinaryTauros with { Areas = ordinaryTauros.Areas.Prepend("Kitakami").Distinct().ToList(), Method = "Breed Paldean Tauros in Kitakami / encounter in the Savanna Biome" };
 }
 foreach (var game in games.Where(g => g.Group == "Sword / Shield"))
+{
     foreach (var p in pokemon.Values.Where(p => p.Form.Length == 0 && pokemon.ContainsKey(p.Id + "-galar") && p.Sources.ContainsKey(game.Id)))
-        p.Sources[game.Id] = new(p.Id is "articuno" or "zapdos" or "moltres" ? ["Max Lair"] : p.Id == "mr-mime" ? ["Spikemuth", "Isle of Armor"] : [],
-            p.Id is "articuno" or "zapdos" or "moltres" ? "Dynamax Adventures" : "Transfer / in-game trade / evolution", SourceUrl(game, p));
+    {
+        string? baseTrade = p.Id switch { "meowth" => "Turffield", "mr-mime" => "Spikemuth", "yamask" => "Ballonlea", _ => null };
+        bool diglettGift = p.Id is "slowpoke" or "slowbro" or "slowking";
+        bool maxLair = p.Id is "slowpoke" or "slowbro" or "slowking" or "weezing" or "articuno" or "zapdos" or "moltres" or "stunfisk";
+        List<string> areas = baseTrade is null ? [] : [baseTrade];
+        if (diglettGift) areas.Add("Fields of Honor");
+        if (maxLair) areas.Add("Max Lair");
+        bool regina = p.Id is not ("meowth" or "slowpoke" or "slowbro" or "slowking" or "articuno" or "zapdos" or "moltres" or "yamask");
+        if (regina) areas.Add("Isle of Armor");
+        List<string> methods = [];
+        if (baseTrade is not null) methods.Add("In-game trade");
+        if (diglettGift) methods.Add("Diglett reward");
+        if (maxLair) methods.Add("Dynamax Adventures");
+        if (regina) methods.Add("Trade with Regina");
+        methods.Add("Breeding or evolution");
+        p.Sources[game.Id] = new(areas, string.Join(" / ", methods), SourceUrl(game, p));
+    }
+    pokemon["slowpoke-galar"].Sources[game.Id] = new(["Wedgehurst Station", "Isle of Armor"], "Encounter", SourceUrl(game, pokemon["slowpoke-galar"]));
+    pokemon["slowking-galar"].Sources[game.Id] = new(["Roaring-Sea Caves"], "Evolve Galarian Slowpoke with the Crown Tundra's Galarica Wreath", SourceUrl(game, pokemon["slowking-galar"]));
+}
 foreach (var game in games.Where(g => g.Group == "Sword / Shield"))
     foreach (var pair in new[] { ("articuno-galar", "Crown Tundra"), ("zapdos-galar", "Wild Area"), ("moltres-galar", "Isle of Armor") })
-        pokemon[pair.Item1].Sources[game.Id] = new([pair.Item2], "Roaming encounter after Dyna Tree Hill", SourceUrl(game, pokemon[pair.Item1]));
+        pokemon[pair.Item1].Sources[game.Id] = new([pair.Item2], "Crown Tundra quest: roaming encounter after Dyna Tree Hill", SourceUrl(game, pokemon[pair.Item1]));
 // The Teal Mask reward is not a wild encounter of the ordinary form.
 foreach (string game in new[] { "scarlet", "violet" })
 {
     pokemon["growlithe-hisui"].Sources[game] = new(["Mossui Town"], "Perrin's reward", SourceUrl(games.Single(g => g.Id == game), pokemon["growlithe-hisui"]));
-    pokemon["arcanine-hisui"].Sources[game] = new([], "Evolve Hisuian Growlithe", SourceUrl(games.Single(g => g.Id == game), pokemon["arcanine-hisui"]));
+    pokemon["arcanine-hisui"].Sources[game] = new([], "Evolve Hisuian Growlithe with a Fire Stone", SourceUrl(games.Single(g => g.Id == game), pokemon["arcanine-hisui"]));
 }
-Catalog catalog = new() { Version = "2026-10-04.1", Games = games, Pokemon = pokemon.Values.OrderBy(p => p.NationalNumber).ThenBy(p => p.Id).Select(p => p with { Sources = p.Sources.OrderBy(pair => pair.Key).ToDictionary(pair => pair.Key, pair => pair.Value) }).ToList(), Dexes = dexes };
+Catalog catalog = new() { Version = "2026-10-04.2", Games = games, Pokemon = pokemon.Values.OrderBy(p => p.NationalNumber).ThenBy(p => p.Id).Select(p => p with { Sources = p.Sources.OrderBy(pair => pair.Key).ToDictionary(pair => pair.Key, pair => pair.Value) }).ToList(), Dexes = dexes };
 await File.WriteAllTextAsync(Path.Combine(output, "data/catalog.json"), JsonSerializer.Serialize(catalog, TrackerJson.Options));
 await Parallel.ForEachAsync(catalog.Pokemon, new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (p, _) =>
     await Download($"https://raw.githubusercontent.com/PokeAPI/sprites/{spriteCommit}/sprites/pokemon/{p.SpriteId}.png", Path.Combine(output, "sprites", p.SpriteId + ".png")));
-await File.WriteAllTextAsync(Path.Combine(output, "data/provenance.json"), JsonSerializer.Serialize(new { GeneratedUtc = DateTimeOffset.UtcNow, PokeApiCommit = dataCommit, SpritesCommit = spriteCommit, Sources = requests.Select(g => g.Key).Order().ToArray() }, TrackerJson.Options));
+await File.WriteAllTextAsync(Path.Combine(output, "data/provenance.json"), JsonSerializer.Serialize(new { GeneratedUtc = DateTimeOffset.UtcNow, PokeApiCommit = dataCommit, SpritesCommit = spriteCommit, Sources = requests.Select(g => g.Key).Concat(catalog.Pokemon.SelectMany(p => p.Sources.Values).Select(source => source.Url)).Distinct().Order().ToArray() }, TrackerJson.Options));
 Console.WriteLine("Catalog and local sprites written.");
 
 int Number(string value) => int.Parse(value, CultureInfo.InvariantCulture);

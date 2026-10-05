@@ -43,6 +43,10 @@ Support these games and all their DLC in the initial release:
 
 Other generations will be added later. The catalog must support every Pokédex available in each supported game and a full National Pokédex across games.
 
+Game and DLC checklists cover only Pokémon that can originate there. Encounters, permanent gifts, in-game trades, breeding, evolution, and trading between paired editions qualify. Transfer-only entries do not qualify, including imported Pokémon subsequently traded to another player. Scope follows the required game or DLC content, even when a DLC quest sends a Pokémon to a base-game area. A DLC checklist can use base-game facilities for breeding and evolution.
+
+Retain numbered entries from expired in-game event distributions, including Walking Wake, Iron Leaves, Zarude, and BDSP Manaphy. Exclude event-only extra regional forms. The full cross-game National Pokédex remains a checklist of every Pokémon, regardless of individual games' availability.
+
 ## Checklists
 
 - Users can create any number of trackers for each Pokédex.
@@ -69,7 +73,13 @@ Other generations will be added later. The catalog must support every Pokédex a
 - Automatically add new catalog entries unchecked at the end.
 - Correct inaccurate ordering or form mappings when necessary, preserve checks by Pokémon identity, and show a notice when corrections change box positions.
 
-For Scarlet and Violet, Kantonian Meowth and Paldean Wooper occur in the numbered Paldea list. Galarian Meowth, Perrserker, Johtonian Wooper, and Quagsire supplement that list. In the combined list, Johtonian Wooper and Quagsire occupy their Kitakami positions. Kitakami also includes obtainable Hisuian Growlithe and Hisuian Arcanine as extra regional entries.
+For Scarlet and Violet, Kantonian Meowth and Paldean Wooper occur in the numbered Paldea list. The exact extra lists are:
+
+- Paldea: Galarian Meowth, Perrserker, Johtonian Wooper, and Quagsire.
+- Kitakami: Hisuian Growlithe, Hisuian Arcanine, and Kantonian Tauros. Breeding Paldean Tauros in Kitakami produces Kantonian Tauros.
+- Blueberry: Alolan Exeggutor, Alolan Meowth, and Alolan Persian.
+
+In the combined list, Johtonian Wooper and Quagsire occupy their Kitakami positions, and Kantonian Tauros occupies its Blueberry position.
 
 White-Striped Basculin occupies Kitakami's ordinary Basculin position. In the combined Scarlet and Violet list, it is distinct from the ordinary Basculin entry in Paldea. Red-Striped and Blue-Striped Basculin share that ordinary entry rather than receiving separate checkboxes.
 

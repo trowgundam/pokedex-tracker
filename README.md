@@ -6,6 +6,8 @@ A standalone .NET 10 Blazor WebAssembly checklist for the mainline Pokémon game
 
 [Open the tracker](https://trowgundam.github.io/pokedex-tracker/).
 
+Game and DLC checklists include only natively obtainable Pokémon, including trades between paired editions. They exclude transfer-only entries. Numbered event entries remain after distributions expire; event-only extra forms are excluded. The full cross-game National Dex includes every Pokémon.
+
 Progress stays in the browser. Optional folder sync writes directly to a folder you select; software such as Syncthing transfers it between your devices. The website has no progress database, login, analytics, or cloud credentials.
 
 ## Run locally
@@ -37,6 +39,8 @@ dotnet build pokedex_tracker.slnx
 dotnet run --project tools/Checks -- .
 node --check pokedex_tracker/wwwroot/app.js
 node --check tools/browser-checks.js
+node --check tools/browser-ui-checks.js
+node --check tools/browser-catalog-checks.js
 dotnet workload install wasm-tools
 dotnet publish pokedex_tracker -c Release -o artifacts/publish
 dotnet run --project tools/Publish -- artifacts/publish/wwwroot /pokedex-tracker/
@@ -50,6 +54,8 @@ The [browser filesystem checks](tools/browser-checks.js) run in a disposable loc
 
 The [interface checks](tools/browser-ui-checks.js) drive real Blazor DOM events for tracker navigation, Settings, creation, acquisition information, filtering, all theme choices, independence, rename, reset, and deletion. They create and remove their own verification trackers. Run them only in a disposable local preview origin.
 
+The [catalog interface checks](tools/browser-catalog-checks.js) create trackers to verify native counts, exact Scarlet and Violet extras, DLC boundaries, acquisition links, numbered event entries, and the unrestricted cross-game National list. They remove their own trackers afterward.
+
 ## Maintain the catalog
 
 ```sh
@@ -57,7 +63,7 @@ dotnet run --project tools/CatalogGenerator -- .
 dotnet run --project tools/Checks -- .
 ```
 
-The generator pins PokéAPI CSV and sprite revisions, caches downloaded source pages under ignored `artifacts/catalog-cache`, and extracts factual location names and acquisition categories. Clear that cache to refresh Serebii pages. Review native form mappings and compatibility when adding a game; species-level dex lists alone cannot identify regional forms.
+The generator pins PokéAPI CSV and sprite revisions, caches downloaded source pages under ignored `artifacts/catalog-cache`, and extracts factual location names and acquisition categories. Clear that cache to refresh Serebii pages. Review native form mappings and game or DLC obtainability when adding a game. Neither species-level dex membership nor HOME compatibility proves local availability.
 
 Increase the catalog version after a membership or ordering correction. Saved checks use stable identities and survive catalog changes. New entries start unchecked. The interface explains that corrected entries may move boxes.
 

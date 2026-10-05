@@ -42,3 +42,13 @@ The updated UI script passed 27 assertions on desktop and at 390 pixels, includi
 Syncing through Settings wrote a hash-verified tracker to a real OPFS directory. Removing that file externally produced a conflict; the Settings review action closed the modal and exposed resolution in the checklist. Accepting deletion cleaned up the test tracker. Only the directory picker was substituted.
 
 Release verification exposed a cached service-worker import retaining the preceding manifest. The publish tool now versions the manifest import URL, and the app registers updates with `updateViaCache: none`. Two consecutive preparation runs succeeded, all 1,135 asset hashes matched, and the worker import used the prepared manifest version.
+
+## Native availability correction
+
+Catalog version `2026-10-04.2` replaces compatibility-based extras with reviewed game and DLC membership. Numbered event entries remain, while event-only extras and transfer-only game entries are excluded. The full cross-game National list remains at 1,083 entries.
+
+New assertions first reproduced the incorrect Paldea extras, DLC-only Lumiose forms, and Galar extras. After correction, the solution built without warnings or errors and all 9,716 catalog and tracker assertions passed. JavaScript syntax checks passed, and the optimized Pages build had matching integrity hashes for all 1,135 assets.
+
+The new browser catalog script passed 45 assertions against the locally served optimized build. It created and removed trackers for the exact four Scarlet and Violet lists, all three Sword and Shield regions, Let's Go, BDSP National, FireRed National, Lumiose, and the full cross-game National list. It checked rendered entries, progress totals, excluded forms, and native acquisition information. The existing interface script also passed all 27 assertions.
+
+An old-catalog backup with Sprigatito and transfer-only Alolan Raichu checked was imported through Settings. After a full reload, Sprigatito remained checked, Alolan Raichu was absent from the Paldea checklist, and progress was 1 of 404. IndexedDB retained both saved identities, and the interface displayed its catalog-change notice. The verification tracker was then removed. Catalog corrections preserve saved data while counting only current checklist entries.
