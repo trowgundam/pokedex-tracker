@@ -47,6 +47,16 @@ async function runPokedexUiChecks() {
     check(document.querySelector('.pokemon-box .box-heading h2').textContent === '001-030', 'Main boxes use position ranges.');
     check([...document.querySelectorAll('.box-heading h2')].some(heading => heading.textContent === '391-400') && [...document.querySelectorAll('.box-heading h2')].some(heading => heading.textContent === 'Extra forms · Box 01'), 'Partial main box ranges and extra-form labels are correct.');
     check(document.querySelector('.box-grid').children.length === 30, 'The first box has 30 positions.');
+    const cell = document.querySelector('[aria-label="Mark Sprigatito"]').closest('.pokemon-slot');
+    const input = cell.querySelector('input');
+    for (const target of [cell.querySelector('.pokemon-check'), cell.querySelector('img'), cell.querySelector('.slot-number'), cell.querySelector('.form-label'), cell.querySelector('.pokemon-name')]) {
+        target.click();
+        await wait(() => input.checked && ready(), 'Clicking a cell area did not check the Pokémon.');
+        check(input.checked, 'The cell background, sprite, number, form, and name can each check the Pokémon.');
+        target.click();
+        await wait(() => !input.checked && ready(), 'Clicking a cell area did not uncheck the Pokémon.');
+        check(!input.checked, 'Cell clicks toggle once and can uncheck the Pokémon.');
+    }
     click('[aria-label="Mark Sprigatito"]');
     await wait(ready, 'Check did not save.');
     await wait(() => document.querySelector('[aria-label="Mark Sprigatito"]').closest('.pokemon-slot').classList.contains('is-checked'), 'Checked styling did not update.');
@@ -57,9 +67,11 @@ async function runPokedexUiChecks() {
     check(document.querySelector('#sources-panel').innerText.includes('Starter') && document.querySelector('#sources-panel a').href === 'https://www.serebii.net/pokedex-sv/sprigatito/', 'Acquisition information links to the correct species.');
     const panel = document.getElementById('sources-panel');
     check(!document.querySelector('dialog[open]'), 'Sources open alongside the checklist without a modal.');
+    check(input.checked && !document.querySelector('[aria-label="Mark Fuecoco"]').checked, 'The sources button does not change checklist progress.');
     click('[aria-label="Sources for Fuecoco"]');
     await wait(() => document.querySelector('#info-title').textContent === 'Fuecoco', 'The panel did not update.');
     check(panel === document.getElementById('sources-panel'), 'Another source selection reuses the same panel.');
+    check(!document.querySelector('[aria-label="Mark Fuecoco"]').checked, 'Viewing an unchecked Pokémon’s sources leaves it unchecked.');
     click('[aria-label="Close sources"]');
     await wait(() => !document.querySelector('#sources-panel'), 'Source panel did not close.');
     click('[aria-label="Sources for Sprigatito"]');

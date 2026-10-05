@@ -86,3 +86,9 @@ A subsequent Brave report of Light staying dark was traced to Dark Reader. The u
 ## Approved redesign release
 
 The production bundle was rebuilt without demo seeding or diagnostic pages, prepared under `/pokedex-tracker/`, and served locally. The Release solution build had no warnings or errors, and all 9,716 catalog and tracker checks passed. All 1,137 offline asset hashes matched, including the new layout module. In T3's native browser, the production bundle passed 28 interface assertions, 200 theme assertions with a minimum sampled contrast of 4.91:1, and 45 catalog interface assertions. Its service worker activated successfully. These scripts removed their own trackers after verification.
+
+## Whole-cell checking
+
+Each Pokémon cell now uses one native checkbox label, with the source button outside it. The fresh Release publish completed without warnings or errors. The production bundle served under `/pokedex-tracker/` passed all 40 interface assertions in T3's native browser, including checking and unchecking through the background, sprite, number, form, and name without double toggles. Source buttons left progress unchanged.
+
+Native mouse clicks in empty cell space toggled the checkbox at desktop and 390-pixel widths. Native keyboard Space restored the original state. The label filled the cell's interior at both widths, and the phone layout had no horizontal overflow. JavaScript syntax and diff checks passed.

@@ -91,6 +91,7 @@ White-Striped Basculin is an explicit exception justified by its gameplay differ
 - Put appearance, folder sync, and backup controls in a Settings modal.
 - Show acquisition information in a right-side panel with a close button. Selecting another Pokémon updates that panel.
 - Label main boxes with position ranges such as `001-030`; preserve the Extra Forms box labels.
+- Clicking anywhere in a Pokémon cell toggles its check, except the source-info button. Keep native checkbox keyboard and disabled behavior.
 - Show unchecked Pokémon sprites in grayscale. Show checked Pokémon in color, with a card tint and stronger border that follow the selected accent.
 - Provide dark and light modes.
 - Default to the browser's reported system color scheme.

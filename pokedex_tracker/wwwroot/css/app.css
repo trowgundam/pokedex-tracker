@@ -72,7 +72,7 @@ h3 { font-size: 15px; }
 .box-heading strong { color: var(--text); font-weight: 600; }
 .box-grid { display: grid; grid-template-columns: repeat(var(--columns), minmax(0, 1fr)); gap: 16px; }
 .pokemon-slot { position: relative; background: var(--base); min-width: 0; min-height: 168px; border: 1px solid var(--border); border-radius: 6px; }
-.pokemon-check { display: flex; align-items: center; flex-direction: column; min-height: 168px; padding: 44px 8px 8px; }
+.pokemon-check { display: flex; align-items: center; flex-direction: column; min-height: 168px; height: 100%; padding: 44px 8px 8px; cursor: pointer; }
 .check-target { display: flex; align-items: center; justify-content: center; position: absolute; left: 0; top: 0; width: 44px; height: 44px; cursor: pointer; }
 .check-target input { margin: 0; padding: 0; width: 18px; height: 18px; min-height: 0; accent-color: var(--accent); cursor: pointer; border-radius: 2px; }
 .slot-number { position: absolute; top: 14px; left: 42px; font-size: 12px; line-height: 16px; color: var(--muted); font-variant-numeric: tabular-nums; }

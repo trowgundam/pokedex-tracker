@@ -106,12 +106,12 @@ else
                                 var p = Store.Pokemon[entry.PokemonId];
                                 bool isChecked = active.State.Checked.Contains(p.Id);
                                 <div @key="p.Id" class="pokemon-slot @(isChecked ? "is-checked" : "") @(!Matches(entry, active) ? "filtered-out" : "")">
-                                    <div class="pokemon-check">
-                                        <label class="check-target"><input id="check-@p.Id" type="checkbox" checked="@isChecked" @onchange="eventArgs => Store.ToggleAsync(active.State.Id, p.Id, (bool)eventArgs.Value!)" disabled="@(Store.Busy || Store.EditingBlocked)" aria-label="Mark @p.DisplayName" /></label>
+                                    <label class="pokemon-check" for="check-@p.Id">
+                                        <span class="check-target"><input id="check-@p.Id" type="checkbox" checked="@isChecked" @onchange="eventArgs => Store.ToggleAsync(active.State.Id, p.Id, (bool)eventArgs.Value!)" disabled="@(Store.Busy || Store.EditingBlocked)" aria-label="Mark @p.DisplayName" /></span>
                                         <span class="slot-number">@(entry.Extra ? $"#{p.NationalNumber:D4}" : entry.Number?.ToString("D3"))</span>
                                         <img src="sprites/@(p.SpriteId).png" alt="" width="56" height="56" loading="lazy" />
-                                        <label for="check-@p.Id" class="pokemon-name">@p.Name</label><small class="form-label">@p.Form</small>
-                                    </div>
+                                        <span class="pokemon-name">@p.Name</span><small class="form-label">@p.Form</small>
+                                    </label>
                                     <button class="info-button" aria-label="Sources for @p.DisplayName" aria-controls="sources-panel" aria-expanded='@(info?.Id == p.Id ? "true" : "false")' title="Acquisition sources" @onclick="() => ShowInfo(p)">i</button>
                                 </div>
                             }
