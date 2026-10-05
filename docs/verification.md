@@ -92,3 +92,11 @@ The production bundle was rebuilt without demo seeding or diagnostic pages, prep
 Each Pokémon cell now uses one native checkbox label, with the source button outside it. The fresh Release publish completed without warnings or errors. The production bundle served under `/pokedex-tracker/` passed all 40 interface assertions in T3's native browser, including checking and unchecking through the background, sprite, number, form, and name without double toggles. Source buttons left progress unchanged.
 
 Native mouse clicks in empty cell space toggled the checkbox at desktop and 390-pixel widths. Native keyboard Space restored the original state. The label filled the cell's interior at both widths, and the phone layout had no horizontal overflow. JavaScript syntax and diff checks passed.
+
+## Ranked acquisition sources
+
+The Sources view ranks listed locations for the selected edition by distinct unchecked Pokémon. The cross-game National tracker ranks games instead, including entries obtained by evolution or other methods without a location. Regional variants retain their separate identities. This view uses the existing catalog and saved checks; no tracker or sync format changed.
+
+All 9,724 catalog, ranking, and tracker checks passed. The optimized Release publish completed without warnings or errors, and all 1,137 offline asset hashes matched. The production bundle served under `/pokedex-tracker/` passed 13 source-view assertions and 41 interface assertions in T3's native browser. These cover overlapping-source updates, restoring counts from the box checklist, independent source-info actions, preserving expanded groups, game-only National grouping, and cleanup of each script's trackers. The browser scripts wait for saving to finish before attempting another edit.
+
+Desktop and 390-pixel screenshots were captured and reviewed. Light and dark Sources layouts had no horizontal overflow. Location summaries were at least 56 pixels high, checklist rows were at least 60 pixels high, and information targets were 44 pixels wide. Counts describe listed availability, without assuming every entry can be caught directly or inferring evolution chains.

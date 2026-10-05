@@ -44,6 +44,9 @@ async function runPokedexUiChecks() {
     click('#create-dialog button[type="submit"]');
     await wait(() => title() === name && ready(), 'Tracker creation failed.');
     await wait(() => !document.querySelector('#create-dialog').open, 'Creation dialog did not close.');
+    click('[aria-label="Tracker view"] button:first-child');
+    await wait(() => document.querySelector('.pokemon-box'), 'Checklist view did not open.');
+    check(document.querySelector('[aria-label="Tracker view"] button:first-child').getAttribute('aria-pressed') === 'true', 'The checklist view exposes its selected state.');
     check(document.querySelector('.pokemon-box .box-heading h2').textContent === '001-030', 'Main boxes use position ranges.');
     check([...document.querySelectorAll('.box-heading h2')].some(heading => heading.textContent === '391-400') && [...document.querySelectorAll('.box-heading h2')].some(heading => heading.textContent === 'Extra forms · Box 01'), 'Partial main box ranges and extra-form labels are correct.');
     check(document.querySelector('.box-grid').children.length === 30, 'The first box has 30 positions.');
@@ -83,9 +86,9 @@ async function runPokedexUiChecks() {
     change('input[type="search"]', 'wooper', 'input');
     check(document.querySelectorAll('.pokemon-slot:not(.filtered-out)').length === 2 && document.querySelector('.box-grid').children.length === 30, 'Search preserves box positions for both Wooper forms.');
     change('input[type="search"]', '', 'input');
-    click('.segmented-filter button:nth-child(2)');
+    click('[aria-label="Pokémon completion filter"] button:nth-child(2)');
     check(document.querySelectorAll('.pokemon-slot:not(.filtered-out)').length === 1, 'Checked filter shows the marked Pokémon.');
-    click('.segmented-filter button:nth-child(1)');
+    click('[aria-label="Pokémon completion filter"] button:nth-child(1)');
     await expandSidebar();
     click('.settings-button');
     await wait(() => document.querySelector('#settings-dialog').open, 'Settings did not open.');

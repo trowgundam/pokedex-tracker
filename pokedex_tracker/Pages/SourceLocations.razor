@@ -1,0 +1,63 @@
+@inject TrackerStore Store
+
+<section class="source-overview" aria-labelledby="source-overview-title">
+    <h2 id="source-overview-title">Sources for unchecked Pokémon</h2>
+    <p class="muted">@(Tracker.State.GameId == "home" ? "Games" : "Locations") with the most outstanding Pokémon appear first. Counts include listed availability; evolution, trades, raids, and unlocks may still be required. Open a Pokémon's sources for details.</p>
+    @if (overview.Locations.Count == 0 && overview.WithoutLocation.Count == 0)
+    {
+        <p class="notice" role="status">Everything in this tracker is checked. No outstanding sources.</p>
+    }
+    else
+    {
+        <p class="source-counts" role="status">@overview.Locations.Count @(Tracker.State.GameId == "home" ? "games" : "locations") · @Outstanding.Count unchecked Pokémon</p>
+        <div class="location-list">
+            @foreach (var location in overview.Locations)
+            {
+                <details @key="(location.GameId, location.Area)" class="source-location" data-game="@location.GameId" data-area="@location.Area">
+                    <summary><span class="location-title">@(location.Area ?? GameName(location.GameId))</span><span class="location-count">@location.Pokemon.Count unchecked</span></summary>
+                    <ul class="source-pokemon-list">
+                        @foreach (var p in location.Pokemon)
+                        {
+                            <li @key="p.Id" data-pokemon="@p.Id">
+                                <label class="source-pokemon-check"><input type="checkbox" aria-label="Mark @p.DisplayName" disabled="@(Store.Busy || Store.EditingBlocked)" @onchange="args => Store.ToggleAsync(Tracker.State.Id, p.Id, (bool)args.Value!)" /><img src="sprites/@(p.SpriteId).png" alt="" width="40" height="40" loading="lazy" /><span>@p.DisplayName<small>#@p.NationalNumber.ToString("D4")</small></span></label>
+                                <button class="source-info" aria-label="Sources for @p.DisplayName" aria-controls="sources-panel" title="Acquisition sources" @onclick="() => OnShowInfo.InvokeAsync(p)">ⓘ</button>
+                            </li>
+                        }
+                    </ul>
+                </details>
+            }
+        </div>
+        @if (overview.WithoutLocation.Count > 0)
+        {
+            <details class="source-location unlocated-sources">
+                <summary><span class="location-title">@(Tracker.State.GameId == "home" ? "Without a listed game" : "Without a listed location")</span><span class="location-count">@overview.WithoutLocation.Count unchecked</span></summary>
+                <p class="muted">@(Tracker.State.GameId == "home" ? "The current catalog has no supported-game source for these entries." : "These entries may require evolution, breeding, gifts, or trading. They are excluded from location counts.")</p>
+                <ul class="source-pokemon-list">
+                    @foreach (var p in overview.WithoutLocation)
+                    {
+                        <li @key="p.Id" data-pokemon="@p.Id">
+                            <label class="source-pokemon-check"><input type="checkbox" aria-label="Mark @p.DisplayName" disabled="@(Store.Busy || Store.EditingBlocked)" @onchange="args => Store.ToggleAsync(Tracker.State.Id, p.Id, (bool)args.Value!)" /><img src="sprites/@(p.SpriteId).png" alt="" width="40" height="40" loading="lazy" /><span>@p.DisplayName<small>@Method(p)</small></span></label>
+                            <button class="source-info" aria-label="Sources for @p.DisplayName" aria-controls="sources-panel" title="Acquisition sources" @onclick="() => OnShowInfo.InvokeAsync(p)">ⓘ</button>
+                        </li>
+                    }
+                </ul>
+            </details>
+        }
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public LocalTracker Tracker { get; set; } = null!;
+    [Parameter] public EventCallback<PokemonVariant> OnShowInfo { get; set; }
+    private AcquisitionOverview overview = new([], []);
+    private List<PokemonVariant> Outstanding = [];
+    protected override void OnParametersSet()
+    {
+        Outstanding = Store.Dex(Tracker).Entries.Where(e => !Tracker.State.Checked.Contains(e.PokemonId))
+            .Select(e => Store.Pokemon[e.PokemonId]).DistinctBy(p => p.Id).ToList();
+        overview = AcquisitionRanking.Build(Outstanding, Tracker.State.GameId);
+    }
+    private string GameName(string id) => Store.Catalog.Games.Single(g => g.Id == id).Name;
+    private string Method(PokemonVariant p) => Tracker.State.GameId == "home" ? "See sources by game" :
+        p.Sources.GetValueOrDefault(Tracker.State.GameId)?.Method ?? "See Serebii for availability";
+}

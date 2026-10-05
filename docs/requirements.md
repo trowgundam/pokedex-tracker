@@ -60,6 +60,7 @@ Retain numbered entries from expired in-game event distributions, including Walk
 - Include naming, renaming, duplicating, resetting, deleting, searching, checked/unchecked filtering, and backup export/import. Preserve box positions when searching or filtering. Reset and delete require confirmation.
 - Provide an information action for each Pokémon to find acquisition sources, following the reference site's interaction.
 - Acquisition information lists route or area names by game and links to Serebii for details. Detailed encounter rates and walkthroughs are outside the initial scope.
+- A Sources view ranks locations by the number of distinct unchecked Pokémon available there, descending. Expand a location to view and check its outstanding entries; checking an entry updates every associated source. Entries without a listed location remain accessible separately. The full cross-game National Dex ranks games instead of locations, including availability through evolution and other methods.
 
 ## Regional entries and ordering
 

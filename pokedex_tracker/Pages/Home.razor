@@ -75,6 +75,16 @@ else
                 <div class="progress-summary"><strong>@caught <span>/ @dex.Entries.Count checked</span></strong><span>@((100.0 * caught / dex.Entries.Count).ToString("0.0"))%</span></div>
                 <progress class="completion" value="@caught" max="@dex.Entries.Count" aria-label="Tracker completion"></progress>
                 @if (caught == dex.Entries.Count) { <p class="completion-message" role="status">✓ Collection complete. Every Pokémon is checked.</p> }
+                <div class="segmented-filter tracker-view" role="group" aria-label="Tracker view">
+                    <button class="@(!sourceView ? "active" : "")" aria-pressed='@(!sourceView ? "true" : "false")' @onclick="() => sourceView = false">Checklist</button>
+                    <button class="@(sourceView ? "active" : "")" aria-pressed='@(sourceView ? "true" : "false")' @onclick="() => sourceView = true">Sources</button>
+                </div>
+                @if (sourceView)
+                {
+                    <SourceLocations @key="active.State.Id" Tracker="active" OnShowInfo="ShowInfo" />
+                }
+                else
+                {
                 <div class="tracker-toolbar">
                     <label class="search-label"><span>Search Pokémon</span><input type="search" placeholder="Name, form, or National number" aria-label="Search Pokémon" @bind="search" @bind:event="oninput" /></label>
                     <div class="filter-control"><span>Show</span><div class="segmented-filter" role="group" aria-label="Pokémon completion filter">
@@ -118,6 +128,7 @@ else
                             @for (int i = box.Entries.Count; i < dex.Columns * dex.Rows; i++) { <div class="empty-slot" aria-hidden="true"></div> }
                         </div>
                     </section>
+                }
                 }
             }
             else if (Selected is { } unsupported)
@@ -227,6 +238,7 @@ else
 
 @code {
     private bool sidebarCollapsed;
+    private bool sourceView;
     private IJSObjectReference? ui;
     private ElementReference sourceHeading;
     private bool focusSourceHeading;
