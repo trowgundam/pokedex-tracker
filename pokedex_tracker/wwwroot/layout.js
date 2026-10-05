@@ -1,5 +1,16 @@
 let sourceOpener;
 
+export function getLastTracker() {
+    try { return localStorage.getItem('pokedex-last-tracker'); } catch { return null; }
+}
+
+export function saveLastTracker(id) {
+    try {
+        if (id === null) localStorage.removeItem('pokedex-last-tracker');
+        else localStorage.setItem('pokedex-last-tracker', id);
+    } catch { /* Tracker URLs still work when preferences cannot be saved. */ }
+}
+
 export function getSidebarCollapsed() {
     try {
         const preference = localStorage.getItem('pokedex-sidebar-collapsed');

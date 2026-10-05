@@ -90,6 +90,7 @@ White-Striped Basculin is an explicit exception justified by its gameplay differ
 
 - Put trackers and creation in a collapsible left sidebar. When collapsed, show only an Expand icon and a Settings gear.
 - Put appearance, folder sync, and backup controls in a Settings modal.
+- Tracker links use the persistent ID in a `tracker` query parameter, so bookmarks survive renaming and work on GitHub Pages. With no tracker ID in the URL, restore the last opened tracker on that device, falling back to the first available tracker, and replace the base URL with its bookmarkable URL without adding a history entry. Invalid or unavailable links show a notice and preserve the requested URL for later sync. Backup imports retain their existing behavior of creating independent copies with new IDs and URLs. Selecting, creating, duplicating, or deleting a tracker updates the URL and local preference; browser Back and Forward follow explicit tracker links.
 - Show acquisition information in a right-side panel with a close button. Selecting another Pokémon updates that panel.
 - Label main boxes with position ranges such as `001-030`; preserve the Extra Forms box labels.
 - Clicking anywhere in a Pokémon cell toggles its check, except the source-info button. Keep native checkbox keyboard and disabled behavior.

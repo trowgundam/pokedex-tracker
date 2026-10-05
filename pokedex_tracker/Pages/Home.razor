@@ -1,6 +1,7 @@
 @page "/"
 @inject TrackerStore Store
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <PageTitle>Pokédex tracker</PageTitle>
@@ -135,6 +136,10 @@ else
             {
                 <section class="welcome"><h1>@unsupported.State.Name</h1><p>This tracker uses a Pokédex the current catalog does not support. Its data is preserved. Export a backup before making changes.</p><button @onclick='() => OpenAction("rename")'>Rename</button><button class="danger" @onclick='() => OpenAction("delete")'>Delete tracker</button></section>
             }
+            else if (selectionNotice is not null)
+            {
+                <section class="welcome"><h1>Tracker unavailable</h1><p role="status">@selectionNotice</p><p class="muted">Choose another tracker from the sidebar, or open Settings to sync a folder. Importing a backup creates independent trackers with their own URLs.</p><button @onclick='async () => await Store.ShowDialogAsync("settings-dialog")'>Open Settings</button></section>
+            }
             else
             {
                 <section class="welcome"><p class="eyebrow">Switch games and beyond</p><h1>A checklist for every collection</h1><p>Create a Pokédex for your next playthrough or living dex. Each tracker keeps its own progress, arranged in the same 30-slot boxes as your game.</p><button class="primary" @onclick="NewTracker">Create your first tracker</button>
@@ -257,6 +262,9 @@ else
         await ui!.InvokeVoidAsync("restoreSourceFocus");
     }
     private Guid? selectedId;
+    private Guid? lastOpenedId;
+    private string? selectionNotice;
+    [SupplyParameterFromQuery(Name = "tracker")] public string? TrackerId { get; set; }
     private string search = "", filter = "all", newName = "", newGame = "scarlet", newDex = "paldea", action = "", renameName = "";
     private string? startupError;
     private PokemonVariant? info;
@@ -271,21 +279,67 @@ else
             ui = await JS.InvokeAsync<IJSObjectReference>("import", "./layout.js");
             sidebarCollapsed = await ui.InvokeAsync<bool>("getSidebarCollapsed");
             await Store.InitializeAsync();
-            selectedId = Store.VisibleTrackers.FirstOrDefault()?.State.Id;
+            string? saved = await ui.InvokeAsync<string?>("getLastTracker");
+            lastOpenedId = Guid.TryParse(saved, out var id) ? id : null;
         }
         catch (Exception ex) { startupError = "Could not open local progress or the catalog. Existing data has not been replaced. " + ex.Message; }
     }
     private void OnChanged()
     {
-        if (!Store.VisibleTrackers.Any(t => t.State.Id == selectedId)) { info = null; selectedId = Store.VisibleTrackers.FirstOrDefault()?.State.Id; }
-        _ = InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(async () =>
+        {
+            if (Store.Ready && Selected is null)
+            {
+                if (selectedId is not null)
+                    await SelectTracker(Store.VisibleTrackers.FirstOrDefault()?.State.Id, replace: true);
+                else await RestoreSelection();
+            }
+            StateHasChanged();
+        });
+    }
+    protected override Task OnParametersSetAsync() => Store.Ready ? RestoreSelection() : Task.CompletedTask;
+    private async Task RestoreSelection()
+    {
+        Guid? target;
+        selectionNotice = null;
+        if (TrackerId is not null)
+        {
+            if (!Guid.TryParse(TrackerId, out var requested))
+            {
+                target = null;
+                selectionNotice = "This URL contains an invalid tracker ID.";
+            }
+            else if (Store.VisibleTrackers.Any(t => t.State.Id == requested)) target = requested;
+            else
+            {
+                target = null;
+                selectionNotice = "This tracker is not available on this device. Sync the folder containing it to open this link.";
+            }
+        }
+        else target = Store.VisibleTrackers.Any(t => t.State.Id == lastOpenedId)
+            ? lastOpenedId : Store.VisibleTrackers.FirstOrDefault()?.State.Id;
+        if (selectedId != target) { info = null; search = ""; filter = "all"; }
+        selectedId = target;
+        if (target is not null || TrackerId is null)
+        {
+            lastOpenedId = target;
+            await ui!.InvokeVoidAsync("saveLastTracker", target?.ToString("N"));
+        }
+        if (TrackerId is null && target is not null)
+            Navigation.NavigateTo(Navigation.GetUriWithQueryParameter("tracker", target.Value.ToString("N")), replace: true);
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (Store.Ready) await Store.ApplyAppearanceAsync(Selected?.State.GameId);
         if (focusSourceHeading && info is not null) { focusSourceHeading = false; await sourceHeading.FocusAsync(preventScroll: true); }
     }
-    private void Select(Guid id) { info = null; selectedId = id; search = ""; filter = "all"; }
+    private Task Select(Guid id) => SelectTracker(id);
+    private async Task SelectTracker(Guid? id, bool replace = false)
+    {
+        info = null; selectedId = id; lastOpenedId = id; selectionNotice = null; search = ""; filter = "all";
+        await ui!.InvokeVoidAsync("saveLastTracker", id?.ToString("N"));
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameter("tracker", id?.ToString("N")), replace: replace);
+    }
     private string GameName(string id) => Store.Catalog.Games.SingleOrDefault(g => g.Id == id)?.Name ?? id;
     private string DexName(string id) => Store.Catalog.Dexes.SingleOrDefault(d => d.Id == id)?.Name ?? id;
     private string ConflictName(TrackerConflict conflict) => Store.Trackers.FirstOrDefault(t => t.State.Id == conflict.TrackerId)?.State.Name ?? "folder tracker";
@@ -311,7 +365,7 @@ else
     private async Task Create()
     {
         await Store.CreateAsync(newName, newGame, newDex);
-        if (Store.Error is null) { info = null; selectedId = Store.VisibleTrackers.Last().State.Id; search = ""; filter = "all"; await Store.CloseDialogAsync("create-dialog"); }
+        if (Store.Error is null) { await Select(Store.VisibleTrackers.Last().State.Id); await Store.CloseDialogAsync("create-dialog"); }
     }
     private async Task OpenAction(string value) { action = value; renameName = Selected?.State.Name ?? ""; await Store.ShowDialogAsync("action-dialog"); }
     private async Task PerformAction()
@@ -322,7 +376,7 @@ else
         else await Store.DeleteAsync(active.State.Id);
         if (Store.Error is null) await Store.CloseDialogAsync("action-dialog");
     }
-    private async Task Duplicate() { if (Selected is { } active) { await Store.DuplicateAsync(active.State.Id); info = null; selectedId = Store.VisibleTrackers.Last().State.Id; } }
+    private async Task Duplicate() { if (Selected is { } active) { await Store.DuplicateAsync(active.State.Id); if (Store.Error is null) await Select(Store.VisibleTrackers.Last().State.Id); } }
     private async Task ShowInfo(PokemonVariant species)
     {
         await ui!.InvokeVoidAsync("rememberSourceOpener");
