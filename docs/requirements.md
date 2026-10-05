@@ -87,15 +87,19 @@ White-Striped Basculin is an explicit exception justified by its gameplay differ
 
 ## Appearance
 
-- Use a header dropdown for selecting trackers and creating new ones. Put Settings at the bottom of the dropdown.
-- Put appearance, folder sync, and backup controls in a Settings modal. Keep the checklist free of a persistent sidebar.
+- Put trackers and creation in a collapsible left sidebar. When collapsed, show only an Expand icon and a Settings gear.
+- Put appearance, folder sync, and backup controls in a Settings modal.
+- Show acquisition information in a right-side panel with a close button. Selecting another Pokémon updates that panel.
+- Label main boxes with position ranges such as `001-030`; preserve the Extra Forms box labels.
+- Show unchecked Pokémon sprites in grayscale. Show checked Pokémon in color, with a card tint and stronger border that follow the selected accent.
 - Provide dark and light modes.
 - Default to the browser's reported system color scheme.
 - Keep Auto, Light, and Dark as the color-scheme selection, independent of the visual theme.
-- Offer Catppuccin and Game Specific themes. Preserve Catppuccin as the default, using Mocha in dark mode and Latte in light mode.
-- Game Specific follows the edition of the currently displayed tracker, including its DLC and combined lists. Each supported edition has light and dark palettes inspired by its prominent artwork colors.
-- Game Specific uses neutral light and dark palettes on the welcome screen and for the full cross-game National tracker.
-- Remember theme and color scheme on the device. Theme preferences do not alter checklist or sync data.
+- Offer Catppuccin and Normal themes. Preserve Catppuccin as the default, using Mocha in dark mode and Latte in light mode.
+- Catppuccin offers all 14 palette accents. Remember its chosen accent when switching themes.
+- Normal uses neutral light and dark surfaces. Its accent automatically follows the edition of the currently displayed tracker, including DLC and combined lists.
+- Normal uses a blue accent on the welcome screen and for the full cross-game National tracker.
+- Remember theme, per-theme accent, and color scheme on the device. Theme preferences do not alter checklist or sync data.
 - Keep theme registration and palette definitions separate from tracker behavior so additional themes require no tracker or sync changes.
 
 ## Deferred work

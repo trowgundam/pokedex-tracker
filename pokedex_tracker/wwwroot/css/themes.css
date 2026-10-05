@@ -10,6 +10,7 @@
     --text: light-dark(#4c4f69, #cdd6f4);
     --muted: light-dark(#5c5f77, #bac2de);
     --accent: light-dark(#1e66f5, #89b4fa);
+    --accent-ink: light-dark(#184bb3, #89b4fa);
     --on-accent: light-dark(#fff, #181825);
     --red: light-dark(#d20f39, #f38ba8);
     --yellow: light-dark(#8c5b00, #f9e2af);
@@ -18,57 +19,130 @@
 :root[data-color-scheme="light"] { color-scheme: light; }
 :root[data-color-scheme="dark"] { color-scheme: dark; }
 
-/* Game artwork supplies the hue and accent; surfaces use restrained tints.
-   No tracker, HOME, and unknown future games use this neutral blue-gray base. */
-:root[data-theme="game"] {
-    --game-hue: 215;
+/* Official Latte/Mocha accent pairs from https://github.com/catppuccin/palette/blob/main/palette.json.
+   Ink is darkened in Latte for readable links/focus; fills retain the original palette. */
+:root[data-theme="catppuccin"][data-accent="rosewater"] {
+    --accent: light-dark(#dc8a78, #f5e0dc);
+    --accent-ink: light-dark(#6c443b, #f5e0dc);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="flamingo"] {
+    --accent: light-dark(#dd7878, #f2cdcd);
+    --accent-ink: light-dark(#754040, #f2cdcd);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="pink"] {
+    --accent: light-dark(#ea76cb, #f5c2e7);
+    --accent-ink: light-dark(#733a63, #f5c2e7);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="mauve"] {
+    --accent: light-dark(#8839ef, #cba6f7);
+    --accent-ink: light-dark(#662bb3, #cba6f7);
+    --on-accent: light-dark(#ffffff, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="red"] {
+    --accent: light-dark(#d20f39, #f38ba8);
+    --accent-ink: light-dark(#9e0b2b, #f38ba8);
+    --on-accent: light-dark(#ffffff, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="maroon"] {
+    --accent: light-dark(#e64553, #eba0ac);
+    --accent-ink: light-dark(#8f2b33, #eba0ac);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="peach"] {
+    --accent: light-dark(#fe640b, #fab387);
+    --accent-ink: light-dark(#873506, #fab387);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="yellow"] {
+    --accent: light-dark(#df8e1d, #f9e2af);
+    --accent-ink: light-dark(#6d460e, #f9e2af);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="green"] {
+    --accent: light-dark(#40a02b, #a6e3a1);
+    --accent-ink: light-dark(#245a18, #a6e3a1);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="teal"] {
+    --accent: light-dark(#179299, #94e2d5);
+    --accent-ink: light-dark(#0e565a, #94e2d5);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="sky"] {
+    --accent: light-dark(#04a5e5, #89dceb);
+    --accent-ink: light-dark(#025475, #89dceb);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="sapphire"] {
+    --accent: light-dark(#209fb5, #74c7ec);
+    --accent-ink: light-dark(#115662, #74c7ec);
+    --on-accent: light-dark(#000000, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="blue"] {
+    --accent: light-dark(#1e66f5, #89b4fa);
+    --accent-ink: light-dark(#1547ac, #89b4fa);
+    --on-accent: light-dark(#ffffff, #181825);
+}
+:root[data-theme="catppuccin"][data-accent="lavender"] {
+    --accent: light-dark(#7287fd, #b4befe);
+    --accent-ink: light-dark(#3f4a8b, #b4befe);
+    --on-accent: light-dark(#000000, #181825);
+}
+
+/* Normal keeps neutral surfaces. Only the accent follows the current edition.
+   No tracker, HOME, and unknown future games use blue. */
+:root[data-theme="normal"] {
     --game-accent: light-dark(#315da3, #9abbed);
-    --base: light-dark(hsl(var(--game-hue) 20% 97%), hsl(var(--game-hue) 25% 10%));
-    --mantle: light-dark(hsl(var(--game-hue) 24% 93%), hsl(var(--game-hue) 27% 8%));
-    --surface: light-dark(hsl(var(--game-hue) 25% 87%), hsl(var(--game-hue) 22% 19%));
-    --raised: light-dark(hsl(var(--game-hue) 24% 81%), hsl(var(--game-hue) 20% 26%));
-    --border: light-dark(hsl(var(--game-hue) 15% 58%), hsl(var(--game-hue) 16% 46%));
-    --text: light-dark(hsl(var(--game-hue) 28% 20%), hsl(var(--game-hue) 25% 91%));
-    --muted: light-dark(hsl(var(--game-hue) 18% 34%), hsl(var(--game-hue) 20% 76%));
+    --base: light-dark(#ffffff, #18181b);
+    --mantle: light-dark(#f4f4f5, #111113);
+    --surface: light-dark(#e4e4e7, #27272a);
+    --raised: light-dark(#d4d4d8, #3f3f46);
+    --border: light-dark(#8e8e97, #71717a);
+    --text: light-dark(#27272a, #fafafa);
+    --muted: light-dark(#52525b, #c4c4cc);
     --accent: var(--game-accent);
+    --accent-ink: var(--game-accent);
     --on-accent: light-dark(#fff, #121a21);
     --red: light-dark(#b3213a, #ff9dab);
     --yellow: light-dark(#805500, #f4d28a);
     --green: light-dark(#24662b, #a3d6a1);
 }
-:root[data-theme="game"][data-game="letsgo-pikachu"] {
-    --game-hue: 48; --game-accent: light-dark(#8a6000, #f3cc4d);
+:root[data-theme="normal"][data-game="letsgo-pikachu"] {
+    --game-accent: light-dark(#8a6000, #f3cc4d);
 }
-:root[data-theme="game"][data-game="letsgo-eevee"] {
-    --game-hue: 28; --game-accent: light-dark(#855021, #d6ac74);
+:root[data-theme="normal"][data-game="letsgo-eevee"] {
+    --game-accent: light-dark(#855021, #d6ac74);
 }
-:root[data-theme="game"][data-game="sword"] {
-    --game-hue: 197; --game-accent: light-dark(#006e91, #63cfec);
+:root[data-theme="normal"][data-game="sword"] {
+    --game-accent: light-dark(#006e91, #63cfec);
 }
-:root[data-theme="game"][data-game="shield"] {
-    --game-hue: 340; --game-accent: light-dark(#a42658, #ef8bab);
+:root[data-theme="normal"][data-game="shield"] {
+    --game-accent: light-dark(#a42658, #ef8bab);
 }
-:root[data-theme="game"][data-game="brilliant-diamond"] {
-    --game-hue: 214; --game-accent: light-dark(#225ec4, #94beff);
+:root[data-theme="normal"][data-game="brilliant-diamond"] {
+    --game-accent: light-dark(#225ec4, #94beff);
 }
-:root[data-theme="game"][data-game="shining-pearl"] {
-    --game-hue: 325; --game-accent: light-dark(#a02777, #ed9bd3);
+:root[data-theme="normal"][data-game="shining-pearl"] {
+    --game-accent: light-dark(#a02777, #ed9bd3);
 }
-:root[data-theme="game"][data-game="legends-arceus"] {
-    --game-hue: 163; --game-accent: light-dark(#176f61, #76ccae);
+:root[data-theme="normal"][data-game="legends-arceus"] {
+    --game-accent: light-dark(#176f61, #76ccae);
 }
-:root[data-theme="game"][data-game="scarlet"] {
-    --game-hue: 13; --game-accent: light-dark(#ae351f, #ffad8e);
+:root[data-theme="normal"][data-game="scarlet"] {
+    --game-accent: light-dark(#ae351f, #ffad8e);
 }
-:root[data-theme="game"][data-game="violet"] {
-    --game-hue: 270; --game-accent: light-dark(#7440bd, #c5a0f4);
+:root[data-theme="normal"][data-game="violet"] {
+    --game-accent: light-dark(#7440bd, #c5a0f4);
 }
-:root[data-theme="game"][data-game="legends-za"] {
-    --game-hue: 166; --game-accent: light-dark(#087465, #61dabb);
+:root[data-theme="normal"][data-game="legends-za"] {
+    --game-accent: light-dark(#087465, #61dabb);
 }
-:root[data-theme="game"][data-game="firered"] {
-    --game-hue: 21; --game-accent: light-dark(#ad420f, #ffac72);
+:root[data-theme="normal"][data-game="firered"] {
+    --game-accent: light-dark(#ad420f, #ffac72);
 }
-:root[data-theme="game"][data-game="leafgreen"] {
-    --game-hue: 110; --game-accent: light-dark(#3b7426, #9ed47a);
+:root[data-theme="normal"][data-game="leafgreen"] {
+    --game-accent: light-dark(#3b7426, #9ed47a);
 }

@@ -18,6 +18,7 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
     public string? FolderName { get; private set; }
     public string ColorScheme { get; private set; } = "system";
     public string Theme { get; private set; } = AppearanceThemes.All[0].Id;
+    public string Accent { get; private set; } = AppearanceThemes.All[0].Accents[0].Id;
     public string Status { get; private set; } = "Saved on this device";
     public string? Error { get; private set; }
     public string? CatalogNotice { get; private set; }
@@ -40,6 +41,7 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
         Capabilities = await browser.InvokeAsync<BrowserCapabilities>("capabilities");
         ColorScheme = await browser.InvokeAsync<string>("getColorScheme");
         Theme = AppearanceThemes.Normalize(await browser.InvokeAsync<string>("getThemeChoice"));
+        Accent = AppearanceThemes.NormalizeAccent(Theme, await browser.InvokeAsync<string?>("getThemeAccent", Theme));
         string saved = await browser.InvokeAsync<string>("loadLocal");
         Trackers = JsonSerializer.Deserialize<List<LocalTracker>>(saved, TrackerJson.Options)
             ?? throw new InvalidDataException("Local progress could not be read.");
@@ -201,14 +203,20 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
     public async Task SetThemeAsync(string theme)
     {
         Theme = AppearanceThemes.Normalize(theme);
+        Accent = AppearanceThemes.NormalizeAccent(Theme, await browser!.InvokeAsync<string?>("getThemeAccent", Theme));
         await browser!.InvokeVoidAsync("setThemeChoice", Theme); Changed?.Invoke();
+    }
+    public async Task SetAccentAsync(string accent)
+    {
+        Accent = AppearanceThemes.NormalizeAccent(Theme, accent);
+        await browser!.InvokeVoidAsync("setThemeAccent", Theme, Accent); Changed?.Invoke();
     }
     public async Task SetColorSchemeAsync(string scheme)
     {
         if (scheme is not ("system" or "dark" or "light")) return;
         await browser!.InvokeVoidAsync("setColorScheme", scheme); ColorScheme = scheme; Changed?.Invoke();
     }
-    public ValueTask ApplyAppearanceAsync(string? gameId) => browser!.InvokeVoidAsync("applyAppearance", Theme, ColorScheme, gameId);
+    public ValueTask ApplyAppearanceAsync(string? gameId) => browser!.InvokeVoidAsync("applyAppearance", Theme, ColorScheme, gameId, Accent);
     public ValueTask ShowDialogAsync(string id) => browser!.InvokeVoidAsync("openDialog", id);
     public ValueTask CloseDialogAsync(string id) => browser!.InvokeVoidAsync("closeDialog", id);
     public async Task RequestPersistentStorageAsync()

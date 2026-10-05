@@ -60,3 +60,29 @@ Settings now separates Theme from Color scheme. The theme script passed 102 asse
 Live browser preference changes switched Auto between light and dark without a reload for both Catppuccin and Game Specific. A saved Game Specific, Dark preference survived a full optimized-app reload, restored Scarlet's palette, and retained the checked Sprigatito. At 390 pixels, Settings displayed both selectors with 44-pixel heights, the checklist used box-separated lists, and the page had no horizontal overflow. Verification trackers were removed.
 
 The optimized Pages output includes `css/themes.css` in its offline manifest, with matching hashes for all 1,136 assets. New themes require a registry entry and CSS palette variables; they do not change tracker or sync behavior.
+
+## Selected Design B and requested refinements
+
+The selected layout is integrated into main with a collapsible sidebar, a right-side acquisition panel, main box ranges, and distinct checked-card states. The optimized release passed 28 interface assertions, 45 catalog interface assertions, and 96 theme assertions in T3's native browser. The interface checks include the collapsed Settings gear, unchanged Extra Forms labels, grayscale unchecked sprites, panel reuse, and Escape focus restoration. Sidebar collapse survived a reload. The same 28 interface assertions passed with a clean production bundle served locally under `/pokedex-tracker/`, including the new module imports.
+
+At 1440×1000 and 390×844, the checklist and source panel had no horizontal overflow or clipped Pokémon labels. Phone source targets were at least 44 pixels, and the source panel left the Settings gear accessible. Sampled checklist text contrast passed 52 theme, edition, and color-scheme combinations, with a minimum of 5.12:1. The solution build and all 9,716 catalog and tracker checks passed.
+
+Native screenshot capture failed on the T3 browser client. These results verify actual DOM behavior and computed layout and colors, but do not include a screenshot-based visual review. No alternative browser was used.
+
+The redundant checked badge and its reserved bottom space were removed. A fresh Release publish passed. T3 native browser checks confirmed no badges, 8-pixel bottom padding, distinct checked backgrounds and borders, colored checked sprites, and grayscale unchecked sprites. Checking and unchecking restored the expected state. Desktop and phone layouts had no horizontal overflow.
+
+## Theme accents
+
+Normal replaces Game Specific with neutral light and dark surfaces and an accent that follows the current tracker. Catppuccin exposes all 14 official Latte/Mocha accents. Theme registration owns accent choices and optional descriptions; per-theme accent preferences stay in browser storage.
+
+The optimized Release publish completed without warnings or errors. In T3's native browser, the theme script passed 194 assertions across every edition and all Catppuccin accents, including Auto, automatic game accents, neutral backgrounds, and theme-switch persistence. Sampled text and primary-button label contrast was at least 4.91:1. The interface script passed all 28 assertions against the final bundle. JavaScript syntax and diff checks passed.
+
+A Peach, Dark Catppuccin preference survived a full reload, preserving the 148/246 demo checklist. A saved legacy Game Specific preference loaded as Normal with Scarlet's accent. At 390×844, Settings had no horizontal overflow and its selectors were 44 pixels high. Desktop and mobile screenshots were captured and reviewed using T3's native browser. Screenshot capture and viewport resizing succeeded during this pass; the earlier capture limitation above applies to the earlier verification only.
+
+Checked-card shading now uses the selected accent, with the readable accent variant for its border. The fresh Release publish passed. T3 native browser checks covered all 14 Catppuccin accents and Scarlet’s automatic accent in light and dark modes, 30 states total. Checked-card text contrast was at least 4.71:1. Checking and unchecking restored the expected tint and sprite state. Desktop and phone screenshots were reviewed, with no phone horizontal overflow.
+
+A subsequent Brave report of Light staying dark was traced to Dark Reader. The user's diagnostic showed the selection and saved preference as `light`, but the computed root and body `color-scheme` as `dark`, with Dark Reader active and no service worker. In T3, both themes applied Light correctly even under an emulated dark browser preference. The user chose to preserve Dark Reader control and disable the extension for localhost; no application appearance changes were made. The user confirmed Light worked in Brave after disabling the extension.
+
+## Approved redesign release
+
+The production bundle was rebuilt without demo seeding or diagnostic pages, prepared under `/pokedex-tracker/`, and served locally. The Release solution build had no warnings or errors, and all 9,716 catalog and tracker checks passed. All 1,137 offline asset hashes matched, including the new layout module. In T3's native browser, the production bundle passed 28 interface assertions, 200 theme assertions with a minimum sampled contrast of 4.91:1, and 45 catalog interface assertions. Its service worker activated successfully. These scripts removed their own trackers after verification.

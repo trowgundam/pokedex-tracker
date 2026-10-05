@@ -1,36 +1,9 @@
 @page "/"
 @inject TrackerStore Store
-@implements IDisposable
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <PageTitle>Pokédex tracker</PageTitle>
-<header class="app-header">
-    <a class="brand" href="."><span class="brand-mark" aria-hidden="true"></span><span>Pokédex tracker<small>Your collection, one box at a time</small></span></a>
-    @if (Store.Ready)
-    {
-        <details id="tracker-menu" class="tracker-dropdown">
-            <summary aria-label="Trackers"><span>@(Selected?.State.Name ?? "Trackers")</span></summary>
-            <div class="tracker-menu-panel">
-                <h2>My trackers <span class="muted">@Store.VisibleTrackers.Count()</span></h2>
-                <nav class="tracker-list" aria-label="Select tracker">
-                    @foreach (var tracker in Store.VisibleTrackers)
-                    {
-                        var total = Store.Catalog.Dexes.SingleOrDefault(d => d.Id == tracker.State.DexId)?.Entries.Count ?? 0;
-                        <button class="tracker-item @(selectedId == tracker.State.Id ? "selected" : "")" aria-current="@(selectedId == tracker.State.Id ? "true" : null)" @onclick="() => Select(tracker.State.Id)">
-                            <strong>@tracker.State.Name</strong><span>@GameName(tracker.State.GameId) · @DexName(tracker.State.DexId)</span>
-                            <span class="tracker-count">@Store.CheckedCount(tracker) / @total @(tracker.Pending ? "· pending" : "")</span>
-                        </button>
-                    }
-                </nav>
-                @if (!Store.VisibleTrackers.Any()) { <p class="muted menu-empty">No trackers yet.</p> }
-                <div class="tracker-menu-actions">
-                    <button class="primary" @onclick="NewTracker" disabled="@(Store.Busy || Store.EditingBlocked)">+ New tracker</button>
-                    <button @onclick='async () => await Store.ShowDialogAsync("settings-dialog")'>Settings</button>
-                </div>
-            </div>
-        </details>
-    }
-</header>
-
 @if (!Store.Ready)
 {
     <main class="loading-state"><h1>Loading your Pokédexes</h1><p>@(startupError ?? "Your progress stays on this device until you sync a folder.")</p>
@@ -39,8 +12,26 @@
 }
 else
 {
-    <div class="workspace">
-        <main class="main-content" id="main-content">
+    <div class="app-shell @(sidebarCollapsed ? "sidebar-collapsed" : "") @(info is not null ? "sources-open" : "")" @onkeydown="ShellKey">
+        <aside class="sidebar" aria-label="Tracker navigation">
+            <button class="sidebar-toggle" aria-label="@(sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar")" title="@(sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar")" aria-expanded='@(sidebarCollapsed ? "false" : "true")' aria-controls="tracker-navigation" @onclick="ToggleSidebar">
+                <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 4h16v16H4zM9 4v16" /><path d="@(sidebarCollapsed ? "m12 9 3 3-3 3" : "m16 9-3 3 3 3")" /></svg><span hidden="@sidebarCollapsed">Trackers</span>
+            </button>
+            <div id="tracker-navigation" class="tracker-navigation" hidden="@sidebarCollapsed">
+                <button class="primary create-tracker" @onclick="NewTracker" disabled="@(Store.Busy || Store.EditingBlocked)">+ Create tracker</button>
+                <nav class="tracker-list" aria-label="Select tracker">
+                    @foreach (var tracker in Store.VisibleTrackers)
+                    {
+                        var total = Store.Catalog.Dexes.SingleOrDefault(d => d.Id == tracker.State.DexId)?.Entries.Count ?? 0;
+                        <button class="tracker-item @(selectedId == tracker.State.Id ? "selected" : "")" aria-current="@(selectedId == tracker.State.Id ? "true" : null)" @onclick="() => Select(tracker.State.Id)"><strong>@tracker.State.Name</strong><span>@GameName(tracker.State.GameId) · @DexName(tracker.State.DexId)</span><span class="tracker-count">@Store.CheckedCount(tracker) / @total @(tracker.Pending ? "· pending" : "")</span></button>
+                    }
+                </nav>
+                @if (!Store.VisibleTrackers.Any()) { <p class="muted menu-empty">No trackers yet.</p> }
+            </div>
+            <button class="settings-button" aria-label="Settings" title="Settings" @onclick='async () => await Store.ShowDialogAsync("settings-dialog")'><svg viewBox="-1.5 -.5 24 24" width="24" height="24" aria-hidden="true"><path d="m9 3-.6 2.2-2 1.2L4.2 6 2.7 8.6l1.6 1.6v2.4l-1.6 1.6L4.2 17l2.2-.4 2 1.2L9 20h3l.6-2.2 2-1.2 2.2.4 1.5-2.8-1.6-1.6v-2.4l1.6-1.6L16.8 6l-2.2.4-2-1.2L12 3z" /><circle cx="10.5" cy="11.5" r="3" /></svg><span hidden="@sidebarCollapsed">Settings</span></button>
+        </aside>
+        <div class="workspace">
+        <main class="main-content" id="main-content" tabindex="-1">
             @if (Store.Error is not null)
             {
                 <div class="notice error" role="alert"><span>@Store.Error</span><button aria-label="Dismiss error" @onclick="Store.DismissError">×</button></div>
@@ -78,37 +69,50 @@ else
             {
                 int caught = Store.CheckedCount(active);
                 <section class="tracker-heading">
-                    <div><p class="eyebrow">@GameName(active.State.GameId) / @dex.Name Pokédex</p><h1>@active.State.Name</h1></div>
-                    <div class="progress-summary"><strong>@caught <span>/ @dex.Entries.Count</span></strong><span>@((100.0 * caught / dex.Entries.Count).ToString("0.0"))% checked</span></div>
-                </section>
-                <progress class="completion" value="@caught" max="@dex.Entries.Count" aria-label="Tracker completion"></progress>
-                <div class="tracker-toolbar">
-                    <label class="search-label">Search<input type="search" placeholder="Name, form, or National number" aria-label="Search Pokémon" @bind="search" @bind:event="oninput" /></label>
-                    <label>Show<select aria-label="Filter Pokémon" @bind="filter"><option value="all">All Pokémon</option><option value="unchecked">Unchecked</option><option value="checked">Checked</option></select></label>
+                    <div class="tracker-identity"><h1>@active.State.Name</h1><p class="eyebrow">@GameName(active.State.GameId) · @dex.Name Pokédex</p></div>
                     <details class="tracker-actions"><summary>Tracker actions</summary><div><button @onclick='() => OpenAction("rename")'>Rename</button><button @onclick="Duplicate">Duplicate</button><button @onclick='() => OpenAction("reset")'>Reset checks</button><button class="danger" @onclick='() => OpenAction("delete")'>Delete tracker</button></div></details>
+                </section>
+                <div class="progress-summary"><strong>@caught <span>/ @dex.Entries.Count checked</span></strong><span>@((100.0 * caught / dex.Entries.Count).ToString("0.0"))%</span></div>
+                <progress class="completion" value="@caught" max="@dex.Entries.Count" aria-label="Tracker completion"></progress>
+                @if (caught == dex.Entries.Count) { <p class="completion-message" role="status">✓ Collection complete. Every Pokémon is checked.</p> }
+                <div class="tracker-toolbar">
+                    <label class="search-label"><span>Search Pokémon</span><input type="search" placeholder="Name, form, or National number" aria-label="Search Pokémon" @bind="search" @bind:event="oninput" /></label>
+                    <div class="filter-control"><span>Show</span><div class="segmented-filter" role="group" aria-label="Pokémon completion filter">
+                        <button class="@(filter == "all" ? "active" : "")" aria-pressed='@(filter == "all" ? "true" : "false")' @onclick='() => filter = "all"'>All</button>
+                        <button class="@(filter == "checked" ? "active" : "")" aria-pressed='@(filter == "checked" ? "true" : "false")' @onclick='() => filter = "checked"'>Checked</button>
+                        <button class="@(filter == "unchecked" ? "active" : "")" aria-pressed='@(filter == "unchecked" ? "true" : "false")' @onclick='() => filter = "unchecked"'>Unchecked</button>
+                    </div></div>
+                    @if (search.Length > 0 || filter != "all")
+                    {
+                        <div class="results-summary" role="status"><span>@dex.Entries.Count(e => Matches(e, active)) results</span>
+                            @if (search.Length > 0) { <button class="text-button" @onclick='() => search = ""'>Clear search</button> }
+                            @if (filter != "all") { <button class="text-button" @onclick='() => filter = "all"'>Clear filter</button> }
+                        </div>
+                    }
                 </div>
-                <p class="tracker-meta">@(active.Pending ? "Folder changes pending" : "Folder version saved") · Last edited @active.State.LastEditedUtc.ToLocalTime().ToString("g")
-                    @if (active.LastSyncedUtc is { } synced) { <span> · Last synchronized @synced.ToLocalTime().ToString("g")</span> }
-                </p>
                 @if (!dex.Entries.Any(e => Matches(e, active))) { <p class="notice">No Pokémon match this search and filter.</p> }
+                bool extraHeadingShown = false;
                 @foreach (var box in Boxes(dex))
                 {
                     int visible = box.Entries.Count(e => Matches(e, active));
                     if (visible == 0 && (search.Length > 0 || filter != "all")) { continue; }
+                    if (box.Entries.Any(e => e.Extra) && !extraHeadingShown)
+                    { <h2 class="extra-heading">Extra forms</h2> extraHeadingShown = true; }
                     <section class="pokemon-box" aria-label="@box.Title">
-                        <div class="box-heading"><h2>@box.Title</h2><span>@box.Entries.Count(e => active.State.Checked.Contains(e.PokemonId)) / @box.Entries.Count checked</span></div>
+                        <div class="box-heading"><h2>@box.Title</h2><span>@if (box.Entries.All(e => active.State.Checked.Contains(e.PokemonId))) { <strong>✓ Complete · </strong> }@box.Entries.Count(e => active.State.Checked.Contains(e.PokemonId)) / @box.Entries.Count checked</span></div>
                         <div class="box-grid" style="--columns: @dex.Columns">
                             @foreach (var entry in box.Entries)
                             {
                                 var p = Store.Pokemon[entry.PokemonId];
                                 bool isChecked = active.State.Checked.Contains(p.Id);
                                 <div @key="p.Id" class="pokemon-slot @(isChecked ? "is-checked" : "") @(!Matches(entry, active) ? "filtered-out" : "")">
-                                    <label class="pokemon-check"><input type="checkbox" checked="@isChecked" @onchange="eventArgs => Store.ToggleAsync(active.State.Id, p.Id, (bool)eventArgs.Value!)" disabled="@(Store.Busy || Store.EditingBlocked)" aria-label="Mark @p.DisplayName" />
+                                    <div class="pokemon-check">
+                                        <label class="check-target"><input id="check-@p.Id" type="checkbox" checked="@isChecked" @onchange="eventArgs => Store.ToggleAsync(active.State.Id, p.Id, (bool)eventArgs.Value!)" disabled="@(Store.Busy || Store.EditingBlocked)" aria-label="Mark @p.DisplayName" /></label>
                                         <span class="slot-number">@(entry.Extra ? $"#{p.NationalNumber:D4}" : entry.Number?.ToString("D3"))</span>
-                                        <img src="sprites/@(p.SpriteId).png" alt="" width="64" height="64" loading="lazy" />
-                                        <span class="pokemon-name">@p.Name</span>@if (p.Form.Length > 0) { <small class="form-label">@p.Form</small> }
-                                    </label>
-                                    <button class="info-button" aria-label="Sources for @p.DisplayName" title="Acquisition sources" @onclick="() => ShowInfo(p)">i</button>
+                                        <img src="sprites/@(p.SpriteId).png" alt="" width="56" height="56" loading="lazy" />
+                                        <label for="check-@p.Id" class="pokemon-name">@p.Name</label><small class="form-label">@p.Form</small>
+                                    </div>
+                                    <button class="info-button" aria-label="Sources for @p.DisplayName" aria-controls="sources-panel" aria-expanded='@(info?.Id == p.Id ? "true" : "false")' title="Acquisition sources" @onclick="() => ShowInfo(p)">i</button>
                                 </div>
                             }
                             @for (int i = box.Entries.Count; i < dex.Columns * dex.Rows; i++) { <div class="empty-slot" aria-hidden="true"></div> }
@@ -131,16 +135,47 @@ else
         </main>
     </div>
 
+        @if (info is { } species)
+        {
+        <aside id="sources-panel" class="sources-panel" aria-labelledby="info-title">
+            <div class="sources-panel-heading"><h2 tabindex="-1" @ref="sourceHeading">Sources</h2><button aria-label="Close sources" title="Close sources" @onclick="CloseInfo">×</button></div>
+            <div class="info-heading"><img src="sprites/@(species.SpriteId).png" alt="" width="80" height="80" /><div><p class="eyebrow">National #@species.NationalNumber.ToString("D4")</p><h2 id="info-title">@species.DisplayName</h2></div></div>
+            @foreach (var game in SourceGames(species))
+            {
+                var source = species.Sources[game.Id];
+                <section class="acquisition"><h3>@game.Name</h3>@if (source.Areas.Count > 0) { <p>@string.Join(", ", source.Areas)</p> }<p class="muted">@source.Method</p><a href="@source.Url" target="_blank" rel="noopener noreferrer">Details on Serebii ↗</a></section>
+            }
+            @if (!SourceGames(species).Any()) { <p>No route record is available for this selection.</p><a href="@($"https://www.serebii.net/pokedex-sv/{species.Id}/")" target="_blank" rel="noopener noreferrer">Details on Serebii</a> }
+        </aside>
+        }
+    </div>
+
     <dialog id="settings-dialog" aria-labelledby="settings-title">
         <div class="settings-heading"><h2 id="settings-title">Settings</h2><button aria-label="Close settings" @onclick='async () => await Store.CloseDialogAsync("settings-dialog")'>×</button></div>
         <label class="theme-control">Theme
             <select aria-label="Theme" value="@Store.Theme" @onchange="ChangeTheme">@foreach (var theme in AppearanceThemes.All) { <option value="@theme.Id">@theme.Name</option> }</select>
         </label>
-        <label class="theme-control">Color scheme
+        @if (AppearanceThemes.Find(Store.Theme).Accents is { Count: > 1 } accents)
+        {
+            <label class="theme-control">Accent color
+                <select aria-label="Accent color" value="@Store.Accent" @onchange="ChangeAccent">@foreach (var accent in accents) { <option value="@accent.Id">@accent.Name</option> }</select>
+            </label>
+        }
+        else if (AppearanceThemes.Find(Store.Theme).AccentDescription is { } accentDescription)
+        {
+            <p class="muted">@accentDescription</p>
+        }
+        <label class="theme-control">Appearance
             <select aria-label="Color scheme" value="@Store.ColorScheme" @onchange="ChangeColorScheme"><option value="system">Auto (system)</option><option value="light">Light</option><option value="dark">Dark</option></select>
         </label>
         @if (Store.Error is not null)
         { <div class="notice error" role="alert"><span>@Store.Error</span><button aria-label="Dismiss settings error" @onclick="Store.DismissError">×</button></div> }
+        <section class="storage-panel"><h2>Storage status</h2><p>Your checklist is saved in this browser on this device.</p><p class="save-status" role="status">@Store.Status</p><p class="muted">@(Selected?.Pending == true ? "Folder changes pending" : "Folder version saved")</p>
+            @if (Selected is { } storedTracker)
+            { <p class="muted">Last edited @storedTracker.State.LastEditedUtc.ToLocalTime().ToString("g")</p>
+                @if (storedTracker.LastSyncedUtc is { } synced) { <p class="muted">Last synchronized @synced.ToLocalTime().ToString("g")</p> }
+            }
+        </section>
         <section class="sync-panel" aria-labelledby="sync-title">
             <h2 id="sync-title">Folder sync</h2>
             @if (!Store.Capabilities.Folder)
@@ -184,25 +219,31 @@ else
     <dialog id="action-dialog" aria-labelledby="action-title"><form @onsubmit="PerformAction" @onsubmit:preventDefault>
         <h2 id="action-title">@ActionTitle</h2>
         @if (action == "rename") { <label>Name<input required maxlength="120" @bind="renameName" /></label> }
-        else { <p>@(action == "reset" ? "Clear every check in this tracker?" : "Delete this tracker and its checklist? This will also be applied to your folder when you synchronize.")</p><p class="muted">This action cannot be undone. You can export a backup first.</p> }
+        else { <p><strong>@Selected?.State.Name</strong></p><p>@(action == "reset" ? "Clear every check in this tracker?" : "Delete this tracker and its checklist? This will also be applied to your folder when you synchronize.")</p><p class="muted">This action cannot be undone. You can export a backup first.</p> }
         <div class="dialog-actions"><button type="button" @onclick='async () => await Store.CloseDialogAsync("action-dialog")'>Cancel</button><button type="submit" class="@(action == "rename" ? "primary" : "danger")" disabled="@(Store.Busy || Store.EditingBlocked)">@ActionTitle</button></div>
     </form></dialog>
-    <dialog id="info-dialog" aria-labelledby="info-title">
-        @if (info is { } species)
-        {
-            <div class="info-heading"><img src="sprites/@(species.SpriteId).png" alt="" width="80" height="80" /><div><p class="eyebrow">National #@species.NationalNumber.ToString("D4")</p><h2 id="info-title">@species.DisplayName</h2></div></div>
-            @foreach (var game in SourceGames(species))
-            {
-                var source = species.Sources[game.Id];
-                <section class="acquisition"><h3>@game.Name</h3>@if (source.Areas.Count > 0) { <p>@string.Join(", ", source.Areas)</p> }<p class="muted">@source.Method</p><a href="@source.Url" target="_blank" rel="noopener noreferrer">Details on Serebii ↗</a></section>
-            }
-            @if (!SourceGames(species).Any()) { <p>No route record is available for this selection.</p><a href="@($"https://www.serebii.net/pokedex-sv/{species.Id}/")" target="_blank" rel="noopener noreferrer">Details on Serebii</a> }
-        }
-        <div class="dialog-actions"><button class="primary" @onclick='async () => await Store.CloseDialogAsync("info-dialog")'>Close</button></div>
-    </dialog>
+
 }
 
 @code {
+    private bool sidebarCollapsed;
+    private IJSObjectReference? ui;
+    private ElementReference sourceHeading;
+    private bool focusSourceHeading;
+    private async Task ToggleSidebar()
+    {
+        sidebarCollapsed = !sidebarCollapsed;
+        await ui!.InvokeVoidAsync("saveSidebarCollapsed", sidebarCollapsed);
+    }
+    private async Task ShellKey(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape" && info is not null) await CloseInfo();
+    }
+    private async Task CloseInfo()
+    {
+        info = null;
+        await ui!.InvokeVoidAsync("restoreSourceFocus");
+    }
     private Guid? selectedId;
     private string search = "", filter = "all", newName = "", newGame = "scarlet", newDex = "paldea", action = "", renameName = "";
     private string? startupError;
@@ -213,15 +254,26 @@ else
     protected override async Task OnInitializedAsync()
     {
         Store.Changed += OnChanged;
-        try { await Store.InitializeAsync(); selectedId = Store.VisibleTrackers.FirstOrDefault()?.State.Id; }
+        try
+        {
+            ui = await JS.InvokeAsync<IJSObjectReference>("import", "./layout.js");
+            sidebarCollapsed = await ui.InvokeAsync<bool>("getSidebarCollapsed");
+            await Store.InitializeAsync();
+            selectedId = Store.VisibleTrackers.FirstOrDefault()?.State.Id;
+        }
         catch (Exception ex) { startupError = "Could not open local progress or the catalog. Existing data has not been replaced. " + ex.Message; }
     }
-    private void OnChanged() { if (!Store.VisibleTrackers.Any(t => t.State.Id == selectedId)) selectedId = Store.VisibleTrackers.FirstOrDefault()?.State.Id; _ = InvokeAsync(StateHasChanged); }
+    private void OnChanged()
+    {
+        if (!Store.VisibleTrackers.Any(t => t.State.Id == selectedId)) { info = null; selectedId = Store.VisibleTrackers.FirstOrDefault()?.State.Id; }
+        _ = InvokeAsync(StateHasChanged);
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (Store.Ready) await Store.ApplyAppearanceAsync(Selected?.State.GameId);
+        if (focusSourceHeading && info is not null) { focusSourceHeading = false; await sourceHeading.FocusAsync(preventScroll: true); }
     }
-    private void Select(Guid id) { selectedId = id; search = ""; filter = "all"; }
+    private void Select(Guid id) { info = null; selectedId = id; search = ""; filter = "all"; }
     private string GameName(string id) => Store.Catalog.Games.SingleOrDefault(g => g.Id == id)?.Name ?? id;
     private string DexName(string id) => Store.Catalog.Dexes.SingleOrDefault(d => d.Id == id)?.Name ?? id;
     private string ConflictName(TrackerConflict conflict) => Store.Trackers.FirstOrDefault(t => t.State.Id == conflict.TrackerId)?.State.Name ?? "folder tracker";
@@ -233,8 +285,12 @@ else
     }
     private IEnumerable<(string Title, List<DexEntry> Entries)> Boxes(DexDefinition dex)
     {
-        int size = dex.Columns * dex.Rows, number = 1;
-        foreach (var entries in dex.Entries.Where(e => !e.Extra).Chunk(size)) yield return ($"Box {number++:D2}", entries.ToList());
+        int size = dex.Columns * dex.Rows, position = 1;
+        foreach (var entries in dex.Entries.Where(e => !e.Extra).Chunk(size))
+        {
+            yield return ($"{position:D3}-{position + entries.Length - 1:D3}", entries.ToList());
+            position += entries.Length;
+        }
         int extra = 1;
         foreach (var entries in dex.Entries.Where(e => e.Extra).Chunk(size)) yield return ($"Extra forms · Box {extra++:D2}", entries.ToList());
     }
@@ -243,7 +299,7 @@ else
     private async Task Create()
     {
         await Store.CreateAsync(newName, newGame, newDex);
-        if (Store.Error is null) { selectedId = Store.VisibleTrackers.Last().State.Id; search = ""; filter = "all"; await Store.CloseDialogAsync("create-dialog"); }
+        if (Store.Error is null) { info = null; selectedId = Store.VisibleTrackers.Last().State.Id; search = ""; filter = "all"; await Store.CloseDialogAsync("create-dialog"); }
     }
     private async Task OpenAction(string value) { action = value; renameName = Selected?.State.Name ?? ""; await Store.ShowDialogAsync("action-dialog"); }
     private async Task PerformAction()
@@ -254,10 +310,16 @@ else
         else await Store.DeleteAsync(active.State.Id);
         if (Store.Error is null) await Store.CloseDialogAsync("action-dialog");
     }
-    private async Task Duplicate() { if (Selected is { } active) { await Store.DuplicateAsync(active.State.Id); selectedId = Store.VisibleTrackers.Last().State.Id; } }
-    private async Task ShowInfo(PokemonVariant species) { info = species; await Store.ShowDialogAsync("info-dialog"); }
+    private async Task Duplicate() { if (Selected is { } active) { await Store.DuplicateAsync(active.State.Id); info = null; selectedId = Store.VisibleTrackers.Last().State.Id; } }
+    private async Task ShowInfo(PokemonVariant species)
+    {
+        await ui!.InvokeVoidAsync("rememberSourceOpener");
+        focusSourceHeading = info is null;
+        info = species;
+    }
     private IEnumerable<GameDefinition> SourceGames(PokemonVariant species) => Store.Catalog.Games.Where(g => species.Sources.ContainsKey(g.Id) &&
         (Selected?.State.GameId == "home" || g.Group == Store.Catalog.Games.SingleOrDefault(game => game.Id == Selected?.State.GameId)?.Group));
+    private Task ChangeAccent(ChangeEventArgs args) => Store.SetAccentAsync(args.Value!.ToString()!);
     private Task ChangeTheme(ChangeEventArgs args) => Store.SetThemeAsync(args.Value!.ToString()!);
     private Task ChangeColorScheme(ChangeEventArgs args) => Store.SetColorSchemeAsync(args.Value!.ToString()!);
     private async Task ImportBackup(InputFileChangeEventArgs args)
@@ -265,5 +327,9 @@ else
         try { using var reader = new StreamReader(args.File.OpenReadStream(10 * 1024 * 1024)); await Store.ImportAsync(await reader.ReadToEndAsync()); }
         catch (Exception ex) { Store.ReportError("Could not import backup: " + ex.Message); }
     }
-    public void Dispose() => Store.Changed -= OnChanged;
+    public async ValueTask DisposeAsync()
+    {
+        Store.Changed -= OnChanged;
+        if (ui is not null) await ui.DisposeAsync();
+    }
 }

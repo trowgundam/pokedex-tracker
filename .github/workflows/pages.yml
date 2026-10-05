@@ -24,6 +24,7 @@ jobs:
       - name: Check browser scripts
         run: |
           node --check pokedex_tracker/wwwroot/app.js
+          node --check pokedex_tracker/wwwroot/layout.js
           node --check pokedex_tracker/wwwroot/service-worker.published.js
           node --check tools/browser-checks.js
           node --check tools/browser-ui-checks.js

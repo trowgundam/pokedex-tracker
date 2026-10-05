@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="css/themes.css" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <script>try { document.documentElement.dataset.colorScheme = localStorage.getItem('pokedex-theme') || 'system'; document.documentElement.dataset.theme = localStorage.getItem('pokedex-appearance') || 'catppuccin'; } catch { }</script>
+    <script>try { document.documentElement.dataset.colorScheme = localStorage.getItem('pokedex-theme') || 'system'; const theme = localStorage.getItem('pokedex-appearance') || 'catppuccin'; document.documentElement.dataset.theme = theme === 'game' ? 'normal' : theme; document.documentElement.dataset.accent = localStorage.getItem('pokedex-accent-' + theme) || 'blue'; } catch { }</script>
     <!-- If you add any scoped CSS files, uncomment the following to load them
     <link href="pokedex_tracker.styles.css" rel="stylesheet" /> -->
     <script type="importmap"></script>

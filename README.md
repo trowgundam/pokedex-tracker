@@ -38,6 +38,7 @@ A folder save confirms local filesystem storage, not delivery to another device.
 dotnet build pokedex_tracker.slnx
 dotnet run --project tools/Checks -- .
 node --check pokedex_tracker/wwwroot/app.js
+node --check pokedex_tracker/wwwroot/layout.js
 node --check tools/browser-checks.js
 node --check tools/browser-ui-checks.js
 node --check tools/browser-catalog-checks.js
@@ -57,13 +58,15 @@ The [interface checks](tools/browser-ui-checks.js) drive real Blazor DOM events 
 
 The [catalog interface checks](tools/browser-catalog-checks.js) create trackers to verify native counts, exact Scarlet and Violet extras, DLC boundaries, acquisition links, numbered event entries, and the unrestricted cross-game National list. They remove their own trackers afterward.
 
-The [theme checks](tools/browser-theme-checks.js) exercise both visual themes and all color schemes across every edition. They check navigation, neutral fallback, Catppuccin consistency, and the contrast of text and primary actions.
+The [theme checks](tools/browser-theme-checks.js) exercise both visual themes and all color schemes across every edition. They check all 14 Catppuccin accents, navigation, neutral fallback, saved accent choices, and text and primary-action contrast.
 
 ## Appearance
 
-Settings separates **Theme** from **Color scheme**. Catppuccin uses Latte and Mocha. Game Specific follows the displayed tracker's edition, with neutral palettes for the welcome screen and full National tracker. Auto follows the browser's color scheme, including changes while the app is open. Both preferences stay on the device.
+The tracker sidebar collapses to an Expand icon and a Settings gear. The browser remembers its collapsed state. Main boxes show position ranges such as `001-030`; Extra Forms keep their box labels. Unchecked sprites are grayscale. Checked cards have colored sprites, an accent-tinted background, and a stronger accent border. Acquisition information opens in a right-side panel that updates when you select another Pokémon.
 
-To add a theme, register its ID and display name in [AppearanceThemes.cs](pokedex_tracker/Services/AppearanceThemes.cs), then define its color variables in [themes.css](pokedex_tracker/wwwroot/css/themes.css) under `:root[data-theme="your-id"]`. Each `light-dark(light, dark)` value supplies both variants. Layout uses semantic variables such as `--base`, `--text`, and `--accent`. Game-dependent palettes can also select `data-game`; unknown games inherit the theme's base palette. Tracker and synchronization code need no changes.
+Settings separates **Theme**, **Accent color**, and **Color scheme**. Catppuccin uses Latte and Mocha and offers all 14 [official accent colors](https://github.com/catppuccin/palette/blob/main/palette.json). Normal uses neutral light and dark surfaces; its accent follows the displayed tracker's edition, with blue for the welcome screen and full National tracker. Auto follows the browser's color scheme, including changes while the app is open. Theme, accent, and color-scheme preferences stay on the device. Switching away from Catppuccin preserves its accent choice. Existing Game Specific preferences map to Normal.
+
+To add a theme, register its ID, display name, and available accents in [AppearanceThemes.cs](pokedex_tracker/Services/AppearanceThemes.cs), then define its color variables in [themes.css](pokedex_tracker/wwwroot/css/themes.css) under `:root[data-theme="your-id"]`. The first registered accent is the default. Select individual accents with `data-accent`; a theme with one accent omits the selector and can provide an `AccentDescription`. Each `light-dark(light, dark)` value supplies both variants. Layout uses semantic variables such as `--base`, `--text`, `--accent`, and `--accent-ink`. Accent fills use the original color; `--accent-ink` supplies readable link text and focus indicators, while `--on-accent` supplies button text. Game-dependent palettes can also select `data-game`; unknown games inherit the theme's base palette. Tracker and synchronization code need no changes.
 
 ## Maintain the catalog
 

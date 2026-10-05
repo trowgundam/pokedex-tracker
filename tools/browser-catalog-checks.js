@@ -10,13 +10,14 @@ async function runPokedexCatalogChecks() {
             await new Promise(resolve => setTimeout(resolve, 50));
         }
     };
-    const click = selector => document.querySelector(selector).click();
+    const click = selector => { const element = document.querySelector(selector); element.focus(); element.click(); };
     const change = (selector, value) => {
         const input = document.querySelector(selector);
         input.value = value;
         input.dispatchEvent(new Event('change', { bubbles: true }));
     };
-    const ready = () => !!document.querySelector('#tracker-menu') && !document.querySelector('.tracker-menu-actions .primary')?.disabled;
+    const ready = () => !!document.querySelector('.sidebar') && !document.querySelector('.create-tracker')?.disabled;
+    const expandSidebar = async () => { if (document.getElementById('tracker-navigation').hidden) { click('.sidebar-toggle'); await wait(() => !document.getElementById('tracker-navigation').hidden, 'Sidebar did not expand.'); } };
     const has = name => !!document.querySelector(`[aria-label="Mark ${name}"]`);
     const cases = [
         { game: 'scarlet', dex: 'paldea', count: 404, extras: ['Galarian Meowth', 'Perrserker', 'Wooper', 'Quagsire'], source: ['Galarian Meowth', 'Naranja Academy'] },
@@ -37,8 +38,8 @@ async function runPokedexCatalogChecks() {
     const prefix = 'Catalog verification ' + Date.now();
     for (const item of cases) {
         const name = prefix + ' ' + item.dex;
-        click('#tracker-menu > summary');
-        click('.tracker-menu-actions .primary');
+        await expandSidebar();
+        click('.create-tracker');
         await wait(() => document.querySelector('#create-dialog').open, 'Create dialog did not open.');
         change('[aria-label="Game"]', item.game);
         await wait(() => [...document.querySelector('[aria-label="Pokédex"]').options].some(option => option.value === item.dex), 'Game lists did not update.');
@@ -57,10 +58,10 @@ async function runPokedexCatalogChecks() {
         if (item.absent) check(item.absent.every(name => !has(name)), item.dex + ' excludes transfer-only or other-DLC entries.');
         if (item.source) {
             click(`[aria-label="Sources for ${item.source[0]}"]`);
-            await wait(() => document.querySelector('#info-dialog').open, 'Sources did not open.');
-            check(document.querySelector('#info-dialog').innerText.includes(item.source[1]) && !/transfer/i.test(document.querySelector('#info-dialog').innerText), item.dex + ' shows its native source.');
-            click('#info-dialog button');
-            await wait(() => !document.querySelector('#info-dialog').open, 'Sources did not close.');
+            await wait(() => !!document.querySelector('#sources-panel'), 'Sources did not open.');
+            check(document.querySelector('#sources-panel').innerText.includes(item.source[1]) && !/transfer/i.test(document.querySelector('#sources-panel').innerText), item.dex + ' shows its native source.');
+            click('[aria-label="Close sources"]');
+            await wait(() => !document.querySelector('#sources-panel'), 'Sources did not close.');
         }
         document.querySelector('.tracker-actions').open = true;
         click('.tracker-actions button:nth-child(4)');

@@ -179,12 +179,18 @@ export function setThemeChoice(theme) {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('pokedex-appearance', theme);
 }
-export function getThemeChoice() { return localStorage.getItem('pokedex-appearance') ?? 'catppuccin'; }
-export function applyAppearance(theme, scheme, gameId) {
+export function getThemeChoice() {
+    const theme = localStorage.getItem('pokedex-appearance');
+    return theme === 'game' ? 'normal' : theme ?? 'catppuccin';
+}
+export function getThemeAccent(theme) { return localStorage.getItem('pokedex-accent-' + theme); }
+export function setThemeAccent(theme, accent) { localStorage.setItem('pokedex-accent-' + theme, accent); }
+export function applyAppearance(theme, scheme, gameId, accent) {
     const root = document.documentElement;
     root.dataset.theme = theme;
     root.dataset.colorScheme = scheme;
     root.dataset.game = gameId ?? '';
+    root.dataset.accent = accent;
 }
 export async function persistStorage() { return navigator.storage?.persist ? await navigator.storage.persist() : false; }
 export function download(name, content) {
@@ -193,22 +199,6 @@ export function download(name, content) {
     anchor.href = url; anchor.download = name; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-document.addEventListener('click', event => {
-    const menu = document.getElementById('tracker-menu');
-    if (!menu?.open || !(event.target instanceof Element)) return;
-    if (!menu.contains(event.target) || event.target.closest('button')) {
-        menu.open = false;
-        if (menu.contains(event.target)) menu.querySelector('summary').focus();
-    }
-});
-document.addEventListener('keydown', event => {
-    const menu = document.getElementById('tracker-menu');
-    if (event.key === 'Escape' && menu?.open) {
-        menu.open = false;
-        menu.querySelector('summary').focus();
-        event.preventDefault();
-    }
-});
 export function openDialog(id) {
     const dialog = document.getElementById(id);
     if (!dialog) return;
