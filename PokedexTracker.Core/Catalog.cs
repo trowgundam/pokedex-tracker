@@ -17,11 +17,27 @@ public sealed record PokemonVariant
     public required int NationalNumber { get; init; }
     public required int SpriteId { get; init; }
     public string Form { get; init; } = "";
-    public Dictionary<string, AcquisitionSource> Sources { get; init; } = [];
+    public Dictionary<string, Dictionary<string, AcquisitionSource>> Sources { get; init; } = [];
     public string DisplayName => Form.Length == 0 ? Name : $"{Form} {Name}";
+
+    public AcquisitionSource? SourceFor(string gameId, DexDefinition dex)
+    {
+        if (!Sources.TryGetValue(gameId, out var sources)) return null;
+        var selected = sources.Where(pair => dex.SourceDexIds.Contains(pair.Key))
+            .Select(pair => pair.Value).ToList();
+        return selected.Count == 0 ? null : AcquisitionSource.Combine(selected);
+    }
 }
 
-public sealed record AcquisitionSource(List<string> Areas, string Method, string Url);
+public sealed record AcquisitionSource(List<string> Areas, string Method, string Url)
+{
+    public static AcquisitionSource Combine(IEnumerable<AcquisitionSource> sources)
+    {
+        var items = sources.ToList();
+        return new(items.SelectMany(source => source.Areas).Distinct(StringComparer.Ordinal).ToList(),
+            string.Join(" / ", items.SelectMany(source => source.Method.Split(" / ")).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)), items[0].Url);
+    }
+}
 
 public sealed record DexDefinition
 {
@@ -29,6 +45,7 @@ public sealed record DexDefinition
     public required string Name { get; init; }
     public required string Group { get; init; }
     public required List<DexEntry> Entries { get; init; }
+    public List<string> SourceDexIds { get; init; } = [];
     public int Columns { get; init; } = 6;
     public int Rows { get; init; } = 5;
 }

@@ -73,7 +73,7 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
     public Task DuplicateAsync(Guid id) => EditAsync(() =>
     {
         var original = Trackers[Index(id)].State;
-        Trackers.Add(new() { State = original with { Id = Guid.NewGuid(), Name = original.Name + " copy", Checked = new(original.Checked), LastEditedUtc = DateTimeOffset.UtcNow } });
+        Trackers.Add(new() { State = original with { Id = Guid.NewGuid(), Name = GeneratedName(original.Name, " copy"), Checked = new(original.Checked), LastEditedUtc = DateTimeOffset.UtcNow } });
     });
     public Task DeleteAsync(Guid id) => EditAsync(() =>
     {
@@ -200,24 +200,24 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
         var parsed = backup.Trackers.Select(state => TrackerJson.Parse(TrackerJson.Serialize(state))).ToList();
         if (parsed.Any(state => !Supported(state))) throw new InvalidDataException("The backup uses a game or Pokédex this catalog does not support.");
         // Imports create independent copies, so current local/folder progress cannot be overwritten.
-        Trackers.AddRange(parsed.Select(state => new LocalTracker { State = state with { Id = Guid.NewGuid(), Name = state.Name + " imported", LastEditedUtc = DateTimeOffset.UtcNow } }));
+        Trackers.AddRange(parsed.Select(state => new LocalTracker { State = state with { Id = Guid.NewGuid(), Name = GeneratedName(state.Name, " imported"), LastEditedUtc = DateTimeOffset.UtcNow } }));
         Status = $"Imported {parsed.Count} independent tracker(s)";
     });
     public async Task SetThemeAsync(string theme)
     {
         Theme = AppearanceThemes.Normalize(theme);
         Accent = AppearanceThemes.NormalizeAccent(Theme, await browser!.InvokeAsync<string?>("getThemeAccent", Theme));
-        await browser!.InvokeVoidAsync("setThemeChoice", Theme); Changed?.Invoke();
+        PreferenceSaved(await browser!.InvokeAsync<bool>("setThemeChoice", Theme)); Changed?.Invoke();
     }
     public async Task SetAccentAsync(string accent)
     {
         Accent = AppearanceThemes.NormalizeAccent(Theme, accent);
-        await browser!.InvokeVoidAsync("setThemeAccent", Theme, Accent); Changed?.Invoke();
+        PreferenceSaved(await browser!.InvokeAsync<bool>("setThemeAccent", Theme, Accent)); Changed?.Invoke();
     }
     public async Task SetColorSchemeAsync(string scheme)
     {
         if (scheme is not ("system" or "dark" or "light")) return;
-        await browser!.InvokeVoidAsync("setColorScheme", scheme); ColorScheme = scheme; Changed?.Invoke();
+        PreferenceSaved(await browser!.InvokeAsync<bool>("setColorScheme", scheme)); ColorScheme = scheme; Changed?.Invoke();
     }
     public ValueTask ApplyAppearanceAsync(string? gameId) => browser!.InvokeVoidAsync("applyAppearance", Theme, ColorScheme, gameId, Accent);
     public ValueTask ShowDialogAsync(string id) => browser!.InvokeVoidAsync("openDialog", id);
@@ -281,6 +281,7 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
     {
         var previous = Trackers.ToList();
         try { change(); await PersistAsync(); }
+        catch (JSException ex) { Trackers = previous; throw new JSException(Friendly(ex) + " The last edit was reverted."); }
         catch { Trackers = previous; throw; }
         Status = "Saved on this device · folder changes pending";
     });
@@ -306,6 +307,17 @@ public sealed class TrackerStore(HttpClient http, IJSRuntime js) : IAsyncDisposa
         Trackers[index] = tracker with { State = update(tracker.State) with { LastEditedUtc = DateTimeOffset.UtcNow, CatalogVersion = Catalog.Version }, Pending = true };
     }
     private static string ValidName(string name) => string.IsNullOrWhiteSpace(name) || name.Trim().Length > 120 ? throw new InvalidDataException("Use a tracker name between 1 and 120 characters.") : name.Trim();
+    private static string GeneratedName(string name, string suffix)
+    {
+        name = name.Trim();
+        int length = Math.Min(name.Length, 120 - suffix.Length);
+        if (length < name.Length && char.IsHighSurrogate(name[length - 1])) length--;
+        return name[..length].TrimEnd() + suffix;
+    }
+    private void PreferenceSaved(bool saved)
+    {
+        Status = saved ? "Appearance preference saved on this device." : "Appearance changed for this session. The browser could not save the preference.";
+    }
     private static string Friendly(JSException error) => error.Message.Split('\n')[0];
     public async ValueTask DisposeAsync() { if (browser is not null) await browser.DisposeAsync(); operations.Dispose(); }
 }

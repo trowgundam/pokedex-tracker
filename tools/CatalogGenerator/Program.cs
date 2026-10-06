@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.VisualBasic.FileIO;
 using PokedexTracker.Core;
+using PokedexTracker.CatalogGenerator;
 
 string root = Path.GetFullPath(args.FirstOrDefault(arg => !arg.StartsWith("--")) ?? ".");
 string cache = Path.Combine(root, "artifacts/catalog-cache");
@@ -113,6 +114,9 @@ Combine("swsh-complete", "Complete", "Sword / Shield", "galar", "isle-of-armor",
 Combine("sv-complete", "Complete", "Scarlet / Violet", "paldea", "kitakami", "blueberry");
 Combine("za-complete", "Complete", "Legends: Z-A", "lumiose", "hyperspace");
 
+dexes[dexes.FindIndex(d => d.Id == "bdsp-national")] = Find("bdsp-national") with { SourceDexIds = ["sinnoh", "bdsp-national"] };
+dexes[dexes.FindIndex(d => d.Id == "frlg-national")] = Find("frlg-national") with { SourceDexIds = ["kanto", "frlg-national"] };
+dexes[dexes.FindIndex(d => d.Id == "national")] = Find("national") with { SourceDexIds = dexes.SelectMany(d => d.SourceDexIds).Distinct().Order().ToList() };
 string[] availabilityPages = ["https://www.serebii.net/swordshield/dynamaxadventurespokemon.shtml", "https://www.serebii.net/scarletviolet/snacksworthlegendary.shtml"];
 var adventures = await ListedSpecies(availabilityPages[0], "swsh");
 adventures.AddRange(["treecko", "torchic", "mudkip", "mew", "cosmog", "cosmoem", "poipole", "naganadel", "keldeo", "regigigas"]);
@@ -135,77 +139,11 @@ await Parallel.ForEachAsync(requests, new ParallelOptions { MaxDegreeOfParalleli
     string path = Path.Combine(cache, TrackerJson.Hash(url) + ".html");
     await Download(url, path);
     string html = await File.ReadAllTextAsync(path, System.Text.Encoding.Latin1);
-    var tables = Regex.Matches(html, @"<table\b[^>]*>.*?</table>", RegexOptions.Singleline | RegexOptions.IgnoreCase)
-        .Select(match => match.Value).Where(table => Regex.IsMatch(table, @"Locations</h2>|<b>Location</b>", RegexOptions.IgnoreCase)).ToList();
     foreach (var pair in group)
     {
-        List<string> areas = [];
-        HashSet<string> methods = [];
-        foreach (string table in tables)
-        {
-        string region = "paldea";
-        foreach (Match row in Regex.Matches(table, @"<tr\b[^>]*>(.*?)</tr>", RegexOptions.Singleline | RegexOptions.IgnoreCase))
-        {
-            var cells = Regex.Matches(row.Value, @"<td\b([^>]*)>(.*?)</td>", RegexOptions.Singleline | RegexOptions.IgnoreCase).ToList();
-            if (cells.Any(cell => Text(cell.Groups[2].Value) == "The Teal Mask")) region = "kitakami";
-            if (cells.Any(cell => Text(cell.Groups[2].Value) == "The Indigo Disk")) region = "blueberry";
-            if (cells.Count < 2 || !cells.Any(cell => MatchesGame(Text(cell.Groups[2].Value), pair.Game))) continue;
-            var info = cells.FirstOrDefault(cell => cell.Groups[1].Value.Contains("fooinfo"));
-            if (info is null) continue;
-            string body = info.Groups[2].Value;
-            string formName = pair.Pokemon.Form switch { "Alolan" => "Alolan", "Galarian" => "Galarian", "Hisuian" => "Hisuian", "Paldean" => "Paldean", _ => "" };
-            var markers = Regex.Matches(body, @"(Alolan|Galarian|Hisuian|Paldean|Kantonian|Johtonian|Normal|Standard) Form(?:e)?(?:\s*:|\s*</b>)", RegexOptions.IgnoreCase).ToList();
-            if (markers.Count > 0)
-            {
-                int marker = markers.FindIndex(m => formName.Length > 0 ? m.Groups[1].Value == formName : new[] { "Kantonian", "Johtonian", "Normal", "Standard" }.Contains(m.Groups[1].Value));
-                if (marker >= 0) body = body[(markers[marker].Index + markers[marker].Length)..(marker + 1 < markers.Count ? markers[marker + 1].Index : body.Length)];
-                else if (formName.Length == 0) body = body[..markers[0].Index];
-                else continue;
-                body = Regex.Split(body, @"(?:<br\s*/?>\s*)(?:Fixed:|Tera Raid Battles:|Max Raid Battles:)", RegexOptions.IgnoreCase)[0];
-            }
-            else if (pair.Game.Group == "Scarlet / Violet")
-            {
-                bool native = Find(region).Entries.Any(entry => !entry.Extra && entry.PokemonId == pair.Pokemon.Id) || region == "blueberry" && pair.Pokemon.Id == "exeggutor-alola";
-                // Unlabelled rows describe the native form, not every compatible regional variant.
-                if (!native && pair.Pokemon.Form.Length > 0 || !native && Find(region).Entries.Any(entry => !entry.Extra && pokemon[entry.PokemonId].NationalNumber == pair.Pokemon.NationalNumber && pokemon[entry.PokemonId].Form.Length > 0)) continue;
-            }
-            else if (pair.Pokemon.Form.Length > 0 && pair.Game.Id == "legends-za" ||
-                pair.Pokemon.Form.Length > 0 && pair.Game.Group == "Sword / Shield" && pair.Pokemon.Form != "Galarian" ||
-                pair.Pokemon.Form.Length > 0 && pair.Game.Group == "Let's Go" ||
-                pair.Pokemon.Form == "Alolan" && pair.Game.Id == "legends-arceus") continue;
-            foreach (Match anchor in Regex.Matches(body, "<a\\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", RegexOptions.Singleline | RegexOptions.IgnoreCase))
-                if (anchor.Groups[1].Value.Contains("/pokearth/") || anchor.Groups[1].Value.Contains("/legendsz-a/wildzone") || anchor.Groups[1].Value.Contains("hyperspace"))
-                {
-                    string area = Text(anchor.Groups[2].Value);
-                    if (area.Length > 0 && area != "Details" && area != "Map" && !anchor.Groups[1].Value.Contains("hyperspace/")) areas.Add(area);
-                }
-            string plain = Text(body);
-            if (pair.Game.Group == "Sword / Shield" && plain.Contains("Dynamax Adventures", StringComparison.OrdinalIgnoreCase))
-            {
-                areas.Add("Max Lair");
-                methods.Add("Dynamax Adventures");
-            }
-            foreach (var rule in new[] { ("Evolve", "Evolution"), ("Trade", "Trade"), ("Transfer", "Transfer"), ("Gift", "Gift"), ("Given", "Gift"), ("Obtained", "Gift"), ("Starter", "Starter"), ("Event", "Event"), ("Raid", "Raid battles"), ("Breed", "Breeding"), ("Hatch", "Breeding"), ("Egg", "Breeding"), ("Not available", "Unavailable"), ("Not in", "Unavailable"), ("Fossil", "Fossil revival"), ("Revive", "Fossil revival"), ("Receive", "Gift"), ("Purchase", "Purchase"), ("Buy", "Purchase"), ("Coins", "Game Corner prize"), ("Fish Everywhere", "Fishing throughout Kanto") })
-                if (plain.Contains(rule.Item1, StringComparison.OrdinalIgnoreCase)) methods.Add(rule.Item2);
-            if (areas.Count == 0 && pair.Game.Group == "FireRed / LeafGreen")
-            {
-                foreach (Match place in Regex.Matches(plain, @"Route\s+\d+|(?:Pallet|Lavender|Fuchsia|Cerulean|Celadon|Saffron|Vermilion|Viridian|Pewter)\s+(?:Town|City)|(?:Viridian Forest|Safari Zone|Seafoam Islands|Pokémon Mansion|Power Plant|Victory Road|Mt\.? Moon|Rock Tunnel|Diglett'?s Cave|Cinnabar Island|Cerulean Cave|One Island|Two Island|Three Island|Four Island|Five Island|Six Island|Seven Island|Treasure Beach|Kindle Road|Mt\.? Ember|Icefall Cave|Pattern Bush|Altering Cave|Tanoby Ruins)", RegexOptions.IgnoreCase)) areas.Add(place.Value);
-                foreach (Match routes in Regex.Matches(plain, @"Routes\s+([\d\s,&]+)"))
-                    foreach (Match n in Regex.Matches(routes.Groups[1].Value, @"\d+")) areas.Add("Route " + n.Value);
-                foreach (string place in new[] { "Bond Bridge", "Berry Forest", "Berry Bush", "Five Isle Meadow", "Cape Brink", "Water Path", "Diglett Cave", "Lost Cave", "Pokémon Tower", "Pokemon Tower", "Pokemon Mansion", "Celadon Mansion", "Celadon Game Corner", "Canyon Entrance", "Ruin Valley", "Dilford Chamber", "Liptoo Chamber", "Monean Chamber", "Rixy Chamber", "Scufib Chamber", "Viapolis Chamber", "Weepth Chamber", "Three Isle Port", "Seavault Canyon", "Navel Rock", "Birth Island" })
-                    if (plain.Contains(place, StringComparison.OrdinalIgnoreCase)) areas.Add(place);
-            }
-            if (pair.Game.Id == "legends-za")
-                foreach (string place in new[] { "Hyperspace Primordial Sea", "Hyperspace Desolate Land", "Hyperspace Sky Pillar", "Hyperspace Infernal Arena", "Hyperspace Newmoon Nightmare" })
-                    if (plain.Contains(place, StringComparison.Ordinal)) areas.Add(place);
-        }
-        }
-        // These checklists are native-only; transfer is not an acquisition source.
-        methods.Remove("Transfer");
-        if (!dexes.Any(d => d.Group == pair.Game.Group && d.Entries.Any(entry => !entry.Extra && entry.PokemonId == pair.Pokemon.Id)))
-            methods.Remove("Event");
-        AcquisitionSource source = new(areas.Distinct().ToList(), methods.Count == 0 ? (areas.Count > 0 ? "Encounter" : "See Serebii for availability") : string.Join(" / ", methods.Order()), url);
-        lock (pair.Pokemon.Sources) pair.Pokemon.Sources[pair.Game.Id] = source;
+        var sources = AcquisitionExtractor.Extract(html, pair.Game, pair.Pokemon, dexes, pokemon, url);
+        if (sources.Count > 0)
+            lock (pair.Pokemon.Sources) pair.Pokemon.Sources[pair.Game.Id] = sources;
     }
 });
 Dictionary<string, string> letsGoTrades = new() { ["rattata"] = "Cerulean City", ["raticate"] = "Cerulean City", ["raichu"] = "Saffron City", ["sandshrew"] = "Celadon City", ["sandslash"] = "Celadon City", ["vulpix"] = "Celadon City", ["ninetales"] = "Celadon City", ["diglett"] = "Lavender Town", ["dugtrio"] = "Lavender Town", ["meowth"] = "Cinnabar Island", ["persian"] = "Cinnabar Island", ["geodude"] = "Vermilion City", ["graveler"] = "Vermilion City", ["golem"] = "Vermilion City", ["grimer"] = "Cinnabar Island", ["muk"] = "Cinnabar Island", ["exeggutor"] = "Indigo Plateau", ["marowak"] = "Fuchsia City" };
@@ -213,94 +151,92 @@ foreach (var p in pokemon.Values.Where(p => p.Form == "Alolan"))
 {
     string species = slugs[p.NationalNumber];
     foreach (var game in games.Where(g => g.Group == "Let's Go"))
-        if (p.Sources.ContainsKey(game.Id))
-        {
-            bool otherEdition = game.Id == "letsgo-pikachu" && new[] { "vulpix", "ninetales", "meowth", "persian" }.Contains(species) ||
-                game.Id == "letsgo-eevee" && new[] { "sandshrew", "sandslash", "grimer", "muk" }.Contains(species);
-            p.Sources[game.Id] = new(otherEdition ? [] : [letsGoTrades[species]], otherEdition ? "Trade from the other Let's Go edition" : "Alolan trade / evolution", SourceUrl(game, p));
-        }
+    {
+        bool otherEdition = game.Id == "letsgo-pikachu" && new[] { "vulpix", "ninetales", "meowth", "persian" }.Contains(species) ||
+            game.Id == "letsgo-eevee" && new[] { "sandshrew", "sandslash", "grimer", "muk" }.Contains(species);
+        SetSource(game.Id, p.Id, "letsgo-kanto", otherEdition ? [] : [letsGoTrades[species]], otherEdition ? "Trade from the other Let's Go edition" : "Alolan trade / evolution");
+    }
     foreach (var game in games.Where(g => g.Group == "Sword / Shield"))
-        if (p.Sources.ContainsKey(game.Id))
-        {
-            bool maxLair = new[] { "raichu", "sandshrew", "sandslash", "diglett", "dugtrio", "meowth", "persian", "marowak" }.Contains(species);
-            p.Sources[game.Id] = new(maxLair ? ["Fields of Honor", "Max Lair"] : ["Fields of Honor"],
-                maxLair ? "Diglett reward / Dynamax Adventures / breeding or evolution" : "Diglett reward / breeding or evolution", SourceUrl(game, p));
-        }
+    {
+        SetSource(game.Id, p.Id, "isle-of-armor", ["Fields of Honor"], "Diglett reward / breeding or evolution");
+        if (new[] { "raichu", "sandshrew", "sandslash", "diglett", "dugtrio", "meowth", "persian", "marowak" }.Contains(species))
+            SetSource(game.Id, p.Id, "crown-tundra", ["Max Lair"], "Dynamax Adventures / breeding or evolution");
+    }
 }
 foreach (var game in games.Where(g => g.Group is "Let's Go" or "Sword / Shield"))
-    pokemon["mew"].Sources[game.Id] = new([], "Poké Ball Plus Mystery Gift", SourceUrl(game, pokemon["mew"]));
+    SetSource(game.Id, "mew", game.Group == "Let's Go" ? "letsgo-kanto" : "galar", [], "Poké Ball Plus Mystery Gift");
 foreach (var game in games.Where(g => g.Group == "FireRed / LeafGreen"))
-{
     foreach (string id in new[] { "lugia", "ho-oh", "deoxys" })
-        pokemon[id].Sources[game.Id] = new([id == "deoxys" ? "Birth Island" : "Navel Rock"], "Switch ticket encounter after entering the Hall of Fame", "https://www.serebii.net/fireredleafgreen/nintendoswitch.shtml");
-}
+        SetSource(game.Id, id, "frlg-national", [id == "deoxys" ? "Birth Island" : "Navel Rock"], "Switch ticket encounter after entering the Hall of Fame", "https://www.serebii.net/fireredleafgreen/nintendoswitch.shtml");
 foreach (string id in new[] { "vulpix-alola", "ninetales-alola" })
-    pokemon[id].Sources["legends-arceus"] = new(["Snowfields Camp"], id == "vulpix-alola" ? "Request 83 reward" : "Evolve Alolan Vulpix", SourceUrl(games.Single(g => g.Id == "legends-arceus"), pokemon[id]));
-pokemon["raichu-alola"].Sources["legends-za"] = new(["Outside Quasartico Inc.", "Hyperspace Lumiose"], "In-game trade / encounter", SourceUrl(games.Single(g => g.Id == "legends-za"), pokemon["raichu-alola"]));
-pokemon["slowpoke-galar"].Sources["legends-za"] = new(["South Boulevard", "Hyperspace Lumiose"], "In-game trade / encounter", SourceUrl(games.Single(g => g.Id == "legends-za"), pokemon["slowpoke-galar"]));
-pokemon["stunfisk-galar"].Sources["legends-za"] = new(["Wild Zone 11", "Hyperspace Lumiose"], "Side Mission 72 reward / encounter", SourceUrl(games.Single(g => g.Id == "legends-za"), pokemon["stunfisk-galar"]));
+    SetSource("legends-arceus", id, "hisui", ["Snowfields Camp"], id == "vulpix-alola" ? "Request 83 reward" : "Evolve Alolan Vulpix");
+foreach (var pair in new[] { ("raichu-alola", "Outside Quasartico Inc.", "In-game trade"), ("slowpoke-galar", "South Boulevard", "In-game trade"), ("stunfisk-galar", "Wild Zone 11", "Side Mission 72 reward") })
+{
+    SetSource("legends-za", pair.Item1, "lumiose", [pair.Item2], pair.Item3);
+    SetSource("legends-za", pair.Item1, "hyperspace", ["Hyperspace Lumiose"], "Encounter");
+}
+foreach (string id in new[] { "slowbro-galar", "slowking-galar" })
+    foreach (string scope in new[] { "lumiose", "hyperspace" })
+        SetSource("legends-za", id, scope, [], "Evolve Galarian Slowpoke");
 foreach (string gameId in new[] { "brilliant-diamond", "shining-pearl" })
 {
-    pokemon["bellossom"].Sources[gameId] = new([], "Evolve Gloom", SourceUrl(games.Single(g => g.Id == gameId), pokemon["bellossom"]));
+    SetSource(gameId, "bellossom", "bdsp-national", [], "Evolve Gloom");
     foreach (string id in new[] { "manaphy", "darkrai", "shaymin" })
-        pokemon[id].Sources[gameId] = new([], "Past in-game Mystery Gift / trade", SourceUrl(games.Single(g => g.Id == gameId), pokemon[id]));
-    pokemon["phione"].Sources[gameId] = new([], "Breed Manaphy with Ditto", SourceUrl(games.Single(g => g.Id == gameId), pokemon["phione"]));
+        SetSource(gameId, id, id == "manaphy" ? "sinnoh" : "bdsp-national", [], "Past in-game Mystery Gift / trade");
+    SetSource(gameId, "phione", "bdsp-national", [], "Breed Manaphy with Ditto");
 }
 foreach (string gameId in new[] { "scarlet", "violet" })
 {
-    pokemon["gimmighoul"].Sources[gameId] = new(["Watchtowers and ruins across Paldea"], "Chest Form encounter", SourceUrl(games.Single(g => g.Id == gameId), pokemon["gimmighoul"]));
-    var ordinaryWooper = pokemon["wooper"].Sources[gameId];
-    pokemon["wooper"].Sources[gameId] = ordinaryWooper with { Areas = ordinaryWooper.Areas.Where(area => area != "South Province Area One").Prepend("Cascarrafa").Distinct().ToList() };
-    var game = games.Single(g => g.Id == gameId);
+    SetSource(gameId, "gimmighoul", "paldea", ["Watchtowers and ruins across Paldea"], "Chest Form encounter");
+    SetSource(gameId, "wooper", "paldea", ["Cascarrafa"], "In-game trade");
     string academy = gameId == "scarlet" ? "Naranja Academy" : "Uva Academy";
-    pokemon["meowth-galar"].Sources[gameId] = new([academy], "Salvatore's gift", SourceUrl(game, pokemon["meowth-galar"]));
-    pokemon["perrserker"].Sources[gameId] = new([], "Evolve Galarian Meowth", SourceUrl(game, pokemon["perrserker"]));
-    pokemon["meowth-alola"].Sources[gameId] = new(["League Club Room"], "Trade with Salvatore", SourceUrl(game, pokemon["meowth-alola"]));
-    pokemon["persian-alola"].Sources[gameId] = new([], "Evolve Alolan Meowth", SourceUrl(game, pokemon["persian-alola"]));
-    var ordinaryTauros = pokemon["tauros"].Sources[gameId];
-    pokemon["tauros"].Sources[gameId] = ordinaryTauros with { Areas = ordinaryTauros.Areas.Prepend("Kitakami").Distinct().ToList(), Method = "Breed Paldean Tauros in Kitakami / encounter in the Savanna Biome" };
-    // National-only breed entries still need native sources, independently of regional membership.
+    SetSource(gameId, "meowth-galar", "paldea", [academy], "Salvatore's gift");
+    SetSource(gameId, "perrserker", "paldea", [], "Evolve Galarian Meowth");
+    SetSource(gameId, "meowth-alola", "blueberry", ["League Club Room"], "Trade with Salvatore");
+    SetSource(gameId, "persian-alola", "blueberry", [], "Evolve Alolan Meowth");
+    SetSource(gameId, "tauros", "kitakami", [], "Breed Paldean Tauros in Kitakami");
+    SetSource(gameId, "tauros", "blueberry", ["Savanna Biome"], "Encounter");
     foreach (string breed in new[] { "blaze", "aqua" })
     {
-        var variant = pokemon[$"tauros-paldea-{breed}-breed"];
         bool nativeEdition = breed == "blaze" ? gameId == "scarlet" : gameId == "violet";
-        variant.Sources[gameId] = new(nativeEdition ? ["Asado Desert", "East Province Area Two", "East Province Area Three", "West Province Area Two"] : [],
-            nativeEdition ? "Encounter" : $"Trade from {(breed == "blaze" ? "Scarlet" : "Violet")}", SourceUrl(game, variant));
+        SetSource(gameId, $"tauros-paldea-{breed}-breed", "paldea", nativeEdition ? ["Asado Desert", "East Province Area Two", "East Province Area Three", "West Province Area Two"] : [],
+            nativeEdition ? "Encounter" : $"Trade from {(breed == "blaze" ? "Scarlet" : "Violet")}");
     }
+    SetSource(gameId, "growlithe-hisui", "kitakami", ["Mossui Town"], "Perrin's reward");
+    SetSource(gameId, "arcanine-hisui", "kitakami", [], "Evolve Hisuian Growlithe with a Fire Stone");
 }
 foreach (var game in games.Where(g => g.Group == "Sword / Shield"))
 {
     foreach (var p in pokemon.Values.Where(p => p.Form.Length == 0 && pokemon.ContainsKey(p.Id + "-galar") && p.Sources.ContainsKey(game.Id)))
     {
+        // These counterparts have different origins in each content scope.
+        p.Sources[game.Id] = [];
         string? baseTrade = p.Id switch { "meowth" => "Turffield", "mr-mime" => "Spikemuth", "yamask" => "Ballonlea", _ => null };
-        bool diglettGift = p.Id is "slowpoke" or "slowbro" or "slowking";
-        bool maxLair = p.Id is "slowpoke" or "slowbro" or "slowking" or "weezing" or "articuno" or "zapdos" or "moltres" or "stunfisk";
-        List<string> areas = baseTrade is null ? [] : [baseTrade];
-        if (diglettGift) areas.Add("Fields of Honor");
-        if (maxLair) areas.Add("Max Lair");
-        bool regina = p.Id is not ("meowth" or "slowpoke" or "slowbro" or "slowking" or "articuno" or "zapdos" or "moltres" or "yamask");
-        if (regina) areas.Add("Isle of Armor");
-        List<string> methods = [];
-        if (baseTrade is not null) methods.Add("In-game trade");
-        if (diglettGift) methods.Add("Diglett reward");
-        if (maxLair) methods.Add("Dynamax Adventures");
-        if (regina) methods.Add("Trade with Regina");
-        methods.Add("Breeding or evolution");
-        p.Sources[game.Id] = new(areas, string.Join(" / ", methods), SourceUrl(game, p));
+        if (baseTrade is not null) SetSource(game.Id, p.Id, "galar", [baseTrade], "In-game trade");
+        if (p.Id is "slowpoke" or "slowbro" or "slowking")
+            SetSource(game.Id, p.Id, "isle-of-armor", ["Fields of Honor"], "Diglett reward / breeding or evolution");
+        else if (p.Id is not ("meowth" or "articuno" or "zapdos" or "moltres" or "yamask"))
+            SetSource(game.Id, p.Id, "isle-of-armor", ["Isle of Armor"], "Trade with Regina / breeding or evolution");
+        if (p.Id is "slowpoke" or "slowbro" or "slowking" or "weezing" or "articuno" or "zapdos" or "moltres" or "stunfisk" or "mr-mime")
+            SetSource(game.Id, p.Id, "crown-tundra", ["Max Lair"], "Dynamax Adventures / breeding or evolution");
+        if (p.Id is "meowth" or "persian") SetSource(game.Id, p.Id, "crown-tundra", [], "Breed or evolve native Alolan Meowth");
     }
-    pokemon["slowpoke-galar"].Sources[game.Id] = new(["Wedgehurst Station", "Isle of Armor"], "Encounter", SourceUrl(game, pokemon["slowpoke-galar"]));
-    pokemon["slowking-galar"].Sources[game.Id] = new(["Roaring-Sea Caves"], "Evolve Galarian Slowpoke with the Crown Tundra's Galarica Wreath", SourceUrl(game, pokemon["slowking-galar"]));
-}
-foreach (var game in games.Where(g => g.Group == "Sword / Shield"))
+    SetSource(game.Id, "slowpoke-galar", "galar", ["Wedgehurst Station"], "Encounter");
+    SetSource(game.Id, "slowpoke-galar", "isle-of-armor", ["Isle of Armor"], "Encounter");
+    SetSource(game.Id, "slowking-galar", "crown-tundra", [], "Evolve Galarian Slowpoke with the Crown Tundra's Galarica Wreath");
     foreach (var pair in new[] { ("articuno-galar", "Crown Tundra"), ("zapdos-galar", "Wild Area"), ("moltres-galar", "Isle of Armor") })
-        pokemon[pair.Item1].Sources[game.Id] = new([pair.Item2], "Crown Tundra quest: roaming encounter after Dyna Tree Hill", SourceUrl(game, pokemon[pair.Item1]));
-// The Teal Mask reward is not a wild encounter of the ordinary form.
-foreach (string game in new[] { "scarlet", "violet" })
-{
-    pokemon["growlithe-hisui"].Sources[game] = new(["Mossui Town"], "Perrin's reward", SourceUrl(games.Single(g => g.Id == game), pokemon["growlithe-hisui"]));
-    pokemon["arcanine-hisui"].Sources[game] = new([], "Evolve Hisuian Growlithe with a Fire Stone", SourceUrl(games.Single(g => g.Id == game), pokemon["arcanine-hisui"]));
+    {
+        pokemon[pair.Item1].Sources[game.Id] = [];
+        SetSource(game.Id, pair.Item1, "crown-tundra", [pair.Item2], "Crown Tundra quest: roaming encounter after Dyna Tree Hill");
+    }
 }
-Catalog catalog = new() { Version = "2026-10-04.2", Games = games, Pokemon = pokemon.Values.OrderBy(p => p.NationalNumber).ThenBy(p => p.Id).Select(p => p with { Sources = p.Sources.OrderBy(pair => pair.Key).ToDictionary(pair => pair.Key, pair => pair.Value) }).ToList(), Dexes = dexes };
+// Missing route data stays visible without borrowing another Dex's locations.
+foreach (var game in games.Where(g => g.Id != "home"))
+    foreach (var dex in dexes.Where(d => d.Group == game.Group && d.SourceDexIds.Contains(d.Id)))
+        foreach (var entry in dex.Entries)
+            if (!pokemon[entry.PokemonId].Sources.TryGetValue(game.Id, out var records) || !records.Keys.Any(dex.SourceDexIds.Contains))
+                SetSource(game.Id, entry.PokemonId, dex.Id, [], "See Serebii for availability");
+Catalog catalog = new() { Version = "2026-10-06.1", Games = games, Pokemon = pokemon.Values.OrderBy(p => p.NationalNumber).ThenBy(p => p.Id).Select(p => p with { Sources = p.Sources.OrderBy(pair => pair.Key).ToDictionary(pair => pair.Key, pair => pair.Value) }).ToList(), Dexes = dexes };
 await File.WriteAllTextAsync(Path.Combine(output, "data/catalog.json"), JsonSerializer.Serialize(catalog, TrackerJson.Options));
 await Parallel.ForEachAsync(catalog.Pokemon, new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (p, _) =>
 {
@@ -308,7 +244,7 @@ await Parallel.ForEachAsync(catalog.Pokemon, new ParallelOptions { MaxDegreeOfPa
     await Download($"https://raw.githubusercontent.com/PokeAPI/sprites/{spriteCommit}/sprites/pokemon/{p.SpriteId}.png", path);
     File.Copy(path, Path.Combine(output, "sprites", p.SpriteId + ".png"), overwrite: true);
 });
-await File.WriteAllTextAsync(Path.Combine(output, "data/provenance.json"), JsonSerializer.Serialize(new { GeneratedUtc = DateTimeOffset.UtcNow, PokeApiCommit = dataCommit, SpritesCommit = spriteCommit, Sources = requests.Select(g => g.Key).Concat(availabilityPages).Concat(catalog.Pokemon.SelectMany(p => p.Sources.Values).Select(source => source.Url)).Distinct().Order().ToArray() }, TrackerJson.Options));
+await File.WriteAllTextAsync(Path.Combine(output, "data/provenance.json"), JsonSerializer.Serialize(new { GeneratedUtc = DateTimeOffset.UtcNow, PokeApiCommit = dataCommit, SpritesCommit = spriteCommit, Sources = requests.Select(g => g.Key).Concat(availabilityPages).Concat(catalog.Pokemon.SelectMany(p => p.Sources.Values).SelectMany(sources => sources.Values).Select(source => source.Url)).Distinct().Order().ToArray() }, TrackerJson.Options));
 Console.WriteLine("Catalog and local sprites written.");
 
 int Number(string value) => int.Parse(value, CultureInfo.InvariantCulture);
@@ -336,12 +272,12 @@ void Add(string id, string name, string group, int pokedex, string native = "")
 {
     List<DexEntry> entries = Csv("pokemon_dex_numbers").Where(row => Number(row["pokedex_id"]) == pokedex).OrderBy(row => Number(row["pokedex_number"]))
         .Select(row => { string species = slugs[Number(row["species_id"])]; string variant = species + "-" + native; return new DexEntry(pokemon.ContainsKey(variant) ? variant : species, Number(row["pokedex_number"]), Region: name); }).ToList();
-    dexes.Add(new() { Id = id, Name = name, Group = group, Entries = entries });
+    dexes.Add(new() { Id = id, Name = name, Group = group, Entries = entries, SourceDexIds = [id] });
 }
-void AddRange(string id, string name, string group, int count) => dexes.Add(new() { Id = id, Name = name, Group = group, Entries = Enumerable.Range(1, count).Select(n => new DexEntry(slugs[n], n, Region: name)).ToList() });
+void AddRange(string id, string name, string group, int count) => dexes.Add(new() { Id = id, Name = name, Group = group, Entries = Enumerable.Range(1, count).Select(n => new DexEntry(slugs[n], n, Region: name)).ToList(), SourceDexIds = [id] });
 void Replace(string dex, string original, string replacement) { var d = Find(dex); int index = d.Entries.FindIndex(e => e.PokemonId == original); if (index >= 0) d.Entries[index] = d.Entries[index] with { PokemonId = replacement }; }
 void Extras(string dex, IEnumerable<string> ids) { var d = Find(dex); HashSet<string> present = d.Entries.Select(e => e.PokemonId).ToHashSet(); foreach (string id in ids) if (pokemon.ContainsKey(id) && present.Add(id)) d.Entries.Add(new(id, null, true, "Extra forms")); }
-void Combine(string id, string name, string group, params string[] components) => dexes.Add(new() { Id = id, Name = name, Group = group, Entries = DexComposition.Combine(components.Select(Find)) });
+void Combine(string id, string name, string group, params string[] components) => dexes.Add(new() { Id = id, Name = name, Group = group, Entries = DexComposition.Combine(components.Select(Find)), SourceDexIds = components.ToList() });
 string SourceUrl(GameDefinition game, PokemonVariant p) => game.Group switch
 {
     "FireRed / LeafGreen" => $"https://www.serebii.net/pokedex-rs/{p.NationalNumber:D3}.shtml",
@@ -353,9 +289,6 @@ string SerebiiSlug(PokemonVariant p) => serebiiSlugs.TryGetValue(p.NationalNumbe
 {
     "farfetchd" => "farfetch'd", "sirfetchd" => "sirfetch'd", "mr-mime" => "mr.mime", "mr-rime" => "mr.rime", "mime-jr" => "mimejr.", "type-null" => "type:null", "nidoran-f" => "nidoranf", "nidoran-m" => "nidoranm", _ => slugs[p.NationalNumber]
 };
-bool MatchesGame(string label, GameDefinition game) => label.Equals(game.Name, StringComparison.OrdinalIgnoreCase) ||
-    game.Id == "legends-za" && label.StartsWith("Legends: Z-A", StringComparison.OrdinalIgnoreCase) ||
-    game.Id == "legends-arceus" && label.Replace(" ", "").Equals("Legends:Arceus", StringComparison.OrdinalIgnoreCase);
 string Text(string html) => Regex.Replace(WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]+>", " ")), @"\s+", " ").Trim();
 async Task Download(string url, string path)
 {
@@ -366,4 +299,11 @@ async Task Download(string url, string path)
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound) { throw new InvalidDataException($"Missing source: {url}", ex); }
         catch (HttpRequestException) when (attempt < 3) { await Task.Delay(1000 * (attempt + 1)); }
     }
+}
+
+void SetSource(string gameId, string pokemonId, string dexId, List<string> areas, string method, string? url = null)
+{
+    var p = pokemon[pokemonId];
+    if (!p.Sources.TryGetValue(gameId, out var sources)) p.Sources[gameId] = sources = [];
+    sources[dexId] = new(areas, method, url ?? SourceUrl(games.Single(g => g.Id == gameId), p));
 }

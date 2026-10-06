@@ -61,33 +61,33 @@ Check(complete.Where(e => e.Extra).Select(e => e.PokemonId).SequenceEqual(["meow
 foreach (var p in catalog.Pokemon)
 {
     Check(File.Exists(Path.Combine(root, "pokedex_tracker/wwwroot/sprites", p.SpriteId + ".png")), "Sprite exists for " + p.Id);
-    Check(p.Sources.Values.All(source => source.Url.StartsWith("https://www.serebii.net/", StringComparison.Ordinal)), "Sources link to Serebii.");
-    Check(p.Sources.Values.All(source => !source.Method.Contains("transfer", StringComparison.OrdinalIgnoreCase)), "Native checklist sources never advertise transfer for " + p.Id);
+    Check(p.Sources.Values.SelectMany(sources => sources.Values).All(source => source.Url.StartsWith("https://www.serebii.net/", StringComparison.Ordinal)), "Sources link to Serebii.");
+    Check(p.Sources.Values.SelectMany(sources => sources.Values).All(source => !source.Method.Contains("transfer", StringComparison.OrdinalIgnoreCase)), "Native checklist sources never advertise transfer for " + p.Id);
 }
 var pikachu = catalog.Pokemon.Single(p => p.Id == "pikachu");
-Check(pikachu.Sources["letsgo-pikachu"].Areas.Contains("Viridian Forest"), "Let's Go route extraction returns Viridian Forest.");
-Check(pikachu.Sources["legends-za"].Areas.Contains("Wild Zone 3"), "Z-A route extraction returns Wild Zone 3.");
+Check(pikachu.SourceFor("letsgo-pikachu", Dex("national"))!.Areas.Contains("Viridian Forest"), "Let's Go route extraction returns Viridian Forest.");
+Check(pikachu.SourceFor("legends-za", Dex("national"))!.Areas.Contains("Wild Zone 3"), "Z-A route extraction returns Wild Zone 3.");
 foreach (string id in new[] { "tauros-paldea-blaze-breed", "tauros-paldea-aqua-breed" })
 {
     var breed = catalog.Pokemon.Single(p => p.Id == id);
     Check(breed.Sources.Keys.Order().SequenceEqual(["scarlet", "violet"]), "National Tauros breeds have sources in both paired editions.");
-    Check(breed.Sources.Values.All(source => source.Url == "https://www.serebii.net/pokedex-sv/tauros/"), "Tauros breeds link to the species page rather than a nonexistent form URL.");
+    Check(breed.Sources.Values.SelectMany(sources => sources.Values).All(source => source.Url == "https://www.serebii.net/pokedex-sv/tauros/"), "Tauros breeds link to the species page rather than a nonexistent form URL.");
 }
 foreach (string game in new[] { "sword", "shield" })
     Check(new[] { "mewtwo", "mew", "keldeo", "treecko", "cosmog", "naganadel", "regigigas" }.All(id => catalog.Pokemon.Single(p => p.Id == id).Sources.ContainsKey(game)), "National sources include native catches, gifts, breeding, and evolutions outside the Sword/Shield numbered lists.");
 foreach (string game in new[] { "sword", "shield" })
 {
-    var source = catalog.Pokemon.Single(p => p.Id == "mewtwo").Sources[game];
+    var source = catalog.Pokemon.Single(p => p.Id == "mewtwo").SourceFor(game, Dex("national"))!;
     Check(source.Areas.SequenceEqual(["Max Lair"]) && source.Method == "Dynamax Adventures", "Mewtwo has its permanent Max Lair encounter rather than a historical event.");
 }
 Check(!catalog.Pokemon.Single(p => p.Id == "mew").Sources.ContainsKey("scarlet") && !catalog.Pokemon.Single(p => p.Id == "mew").Sources.ContainsKey("violet"), "National excludes expired SV Mew distribution outside its numbered Dex.");
 foreach (string game in new[] { "scarlet", "violet" })
     Check(new[] { "rayquaza", "kyogre", "kubfu", "urshifu" }.All(id => catalog.Pokemon.Single(p => p.Id == id).Sources.ContainsKey(game)), "National sources include Snacksworth encounters and native evolution outside the SV numbered lists.");
-Check(catalog.Pokemon.Single(p => p.Id == "growlithe-hisui").Sources["scarlet"].Method == "Perrin's reward", "Regional gift overrides do not show ordinary encounters.");
-Check(catalog.Pokemon.Single(p => p.Id == "basculin-white-striped").Sources["scarlet"].Areas.SequenceEqual(["Timeless Woods"]), "White-striped Basculin does not inherit ordinary Paldea encounters.");
-Check(catalog.Pokemon.Single(p => p.Id == "vulpix-alola").Sources["scarlet"].Areas.Contains("Polar Biome") && !catalog.Pokemon.Single(p => p.Id == "vulpix-alola").Sources["scarlet"].Areas.Contains("Kitakami Road"), "Alolan Vulpix uses its own encounter region.");
-Check(catalog.Pokemon.Single(p => p.Id == "meowth-alola").Sources["scarlet"].Areas.SequenceEqual(["League Club Room"]), "Blueberry Alolan Meowth names its in-game trade location.");
-Check(catalog.Pokemon.Single(p => p.Id == "tauros").Sources["scarlet"].Method.Contains("Breed Paldean Tauros in Kitakami"), "Kantonian Tauros explains its native Kitakami breeding source.");
+Check(catalog.Pokemon.Single(p => p.Id == "growlithe-hisui").SourceFor("scarlet", Dex("national"))!.Method == "Perrin's reward", "Regional gift overrides do not show ordinary encounters.");
+Check(catalog.Pokemon.Single(p => p.Id == "basculin-white-striped").SourceFor("scarlet", Dex("national"))!.Areas.SequenceEqual(["Timeless Woods"]), "White-striped Basculin does not inherit ordinary Paldea encounters.");
+Check(catalog.Pokemon.Single(p => p.Id == "vulpix-alola").SourceFor("scarlet", Dex("national"))!.Areas.Contains("Polar Biome") && !catalog.Pokemon.Single(p => p.Id == "vulpix-alola").SourceFor("scarlet", Dex("national"))!.Areas.Contains("Kitakami Road"), "Alolan Vulpix uses its own encounter region.");
+Check(catalog.Pokemon.Single(p => p.Id == "meowth-alola").SourceFor("scarlet", Dex("national"))!.Areas.SequenceEqual(["League Club Room"]), "Blueberry Alolan Meowth names its in-game trade location.");
+Check(catalog.Pokemon.Single(p => p.Id == "tauros").SourceFor("scarlet", Dex("national"))!.Method.Contains("Breed Paldean Tauros in Kitakami"), "Kantonian Tauros explains its native Kitakami breeding source.");
 
 DateTimeOffset now = DateTimeOffset.Parse("2026-10-04T12:00:00Z");
 TrackerState original = new() { Id = Guid.NewGuid(), Name = "Living dex", GameId = "scarlet", DexId = "paldea", CatalogVersion = catalog.Version, LastEditedUtc = now };
@@ -110,7 +110,7 @@ Check(TrackerSync.Decide(local, []) is SyncDecision.Conflict, "Another device mu
 Check(TrackerSync.Decide(local with { State = edited, Pending = true }, [b]) is SyncDecision.Import, "A retried identical save can converge without a conflict.");
 Check(TrackerSync.Decide(local with { Deleted = true, Pending = true }, [b]) is SyncDecision.Conflict, "Deletion cannot discard a remote edit without acknowledgement.");
 PokemonVariant SourceFixture(string id, string form, Dictionary<string, AcquisitionSource> sources) => new()
-{ Id = id, Name = "Meowth", Form = form, NationalNumber = 52, SpriteId = 52, Sources = sources };
+{ Id = id, Name = "Meowth", Form = form, NationalNumber = 52, SpriteId = 52, Sources = sources.ToDictionary(pair => pair.Key, pair => new Dictionary<string, AcquisitionSource> { ["paldea"] = pair.Value }) };
 var ordinary = SourceFixture("meowth", "", new()
 {
     ["scarlet"] = new(["Forest", "Route 1", "Route 1"], "Encounter", "https://www.serebii.net/"),
@@ -123,15 +123,17 @@ var regional = SourceFixture("meowth-galar", "Galarian", new()
 });
 var unlocated = SourceFixture("perrserker", "", new()
 { ["scarlet"] = new([], "Evolution", "https://www.serebii.net/") });
-var ranking = AcquisitionRanking.Build([ordinary, regional, ordinary, unlocated], "scarlet");
+var ranking = AcquisitionRanking.Build([ordinary, regional, ordinary, unlocated], "scarlet", Dex("paldea"));
 Check(ranking.Locations.Select(location => (location.GameId, location.Area, location.Pokemon.Count)).SequenceEqual([("scarlet", "Forest", 2), ("scarlet", "Route 1", 1)]), "Locations rank by distinct outstanding variants in the selected edition, without duplicate areas or entries.");
 Check(ranking.Locations[0].Pokemon.Select(p => p.Id).SequenceEqual(["meowth", "meowth-galar"]), "Regional variants of the same species remain separate ranking entries.");
 Check(ranking.WithoutLocation.Select(p => p.Id).SequenceEqual(["perrserker"]), "Evolution-only entries without locations remain visible separately.");
-var afterCheck = AcquisitionRanking.Build([regional, unlocated], "scarlet");
+var afterCheck = AcquisitionRanking.Build([regional, unlocated], "scarlet", Dex("paldea"));
 Check(afterCheck.Locations.Select(location => (location.Area, location.Pokemon.Count)).SequenceEqual([("Forest", 1)]), "Checking a Pokémon decreases every associated location and removes empty locations.");
-var nationalRanking = AcquisitionRanking.Build([ordinary, regional, unlocated], "home");
+var nationalRanking = AcquisitionRanking.Build([ordinary, regional, unlocated], "home", Dex("national"));
 Check(nationalRanking.Locations.Select(location => (location.GameId, location.Pokemon.Count)).SequenceEqual([("scarlet", 3), ("leafgreen", 1), ("violet", 1)]) && nationalRanking.Locations.All(location => location.Area is null), "Cross-game National sources rank games only and include evolution-only entries.");
 Check(nationalRanking.WithoutLocation.Count == 0, "National game availability does not require an encounter location.");
-Check(AcquisitionRanking.Build([regional], "leafgreen").WithoutLocation.Select(p => p.Id).SequenceEqual(["meowth-galar"]), "A location in another edition does not count for this edition.");
-Check(AcquisitionRanking.Build([], "scarlet") is { Locations.Count: 0, WithoutLocation.Count: 0 }, "A completed tracker has no outstanding sources.");
+Check(AcquisitionRanking.Build([regional], "leafgreen", Dex("paldea")).WithoutLocation.Select(p => p.Id).SequenceEqual(["meowth-galar"]), "A location in another edition does not count for this edition.");
+Check(AcquisitionRanking.Build([], "scarlet", Dex("paldea")) is { Locations.Count: 0, WithoutLocation.Count: 0 }, "A completed tracker has no outstanding sources.");
+checks += AcquisitionChecks.Run(catalog);
+checks += await StoreChecks.Run(catalog);
 Console.WriteLine($"PASS: {checks} catalog and tracker behavior checks.");

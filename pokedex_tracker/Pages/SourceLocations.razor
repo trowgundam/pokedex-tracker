@@ -55,9 +55,9 @@
     {
         Outstanding = Store.Dex(Tracker).Entries.Where(e => !Tracker.State.Checked.Contains(e.PokemonId))
             .Select(e => Store.Pokemon[e.PokemonId]).DistinctBy(p => p.Id).ToList();
-        overview = AcquisitionRanking.Build(Outstanding, Tracker.State.GameId);
+        overview = AcquisitionRanking.Build(Outstanding, Tracker.State.GameId, Store.Dex(Tracker));
     }
     private string GameName(string id) => Store.Catalog.Games.Single(g => g.Id == id).Name;
     private string Method(PokemonVariant p) => Tracker.State.GameId == "home" ? "See sources by game" :
-        p.Sources.GetValueOrDefault(Tracker.State.GameId)?.Method ?? "See Serebii for availability";
+        p.SourceFor(Tracker.State.GameId, Store.Dex(Tracker))?.Method ?? "See Serebii for availability";
 }

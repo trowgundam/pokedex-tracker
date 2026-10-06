@@ -34,12 +34,20 @@ jobs:
           for script in pokedex_tracker/wwwroot/*.js tools/browser-*.js; do
             node --check "$script"
           done
+          for script in tools/*.mjs; do
+            node --check "$script"
+          done
+      - name: Check appearance preference behavior
+        run: node --test tools/preferences-checks.mjs
   publish:
     name: Release publish
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
@@ -51,6 +59,10 @@ jobs:
         env:
           REPOSITORY_NAME: ${{ github.event.repository.name }}
         run: dotnet run --project tools/Publish -c Release -- artifacts/publish/wwwroot "/$REPOSITORY_NAME/"
+      - name: Verify published browser behavior and offline reopening
+        env:
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+        run: node tools/browser-ci.mjs artifacts/publish/wwwroot "/$REPOSITORY_NAME/"
       - if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:

@@ -158,7 +158,7 @@ else
             <div class="info-heading"><img src="sprites/@(species.SpriteId).png" alt="" width="80" height="80" /><div><p class="eyebrow">National #@species.NationalNumber.ToString("D4")</p><h2 id="info-title">@species.DisplayName</h2></div></div>
             @foreach (var game in SourceGames(species))
             {
-                var source = species.Sources[game.Id];
+                var source = species.SourceFor(game.Id, Store.Dex(Selected!))!;
                 <section class="acquisition"><h3>@game.Name</h3>@if (source.Areas.Count > 0) { <p>@string.Join(", ", source.Areas)</p> }<p class="muted">@source.Method</p><a href="@source.Url" target="_blank" rel="noopener noreferrer">Details on Serebii ↗</a></section>
             }
             @if (!SourceGames(species).Any()) { <p>No route record is available for this selection.</p><a href="@($"https://www.serebii.net/pokedex-sv/{species.Id}/")" target="_blank" rel="noopener noreferrer">Details on Serebii</a> }
@@ -227,6 +227,7 @@ else
     </dialog>
     <dialog id="create-dialog" aria-labelledby="create-title"><form @onsubmit="Create" @onsubmit:preventDefault>
         <h2 id="create-title">New tracker</h2><label>Name<input required maxlength="120" @bind="newName" placeholder="My living dex" /></label>
+        @if (Store.Error is not null) { <p class="notice error" role="alert">@Store.Error</p> }
         <label>Game<select aria-label="Game" value="@newGame" @onchange="ChooseGame">@foreach (var group in Store.Catalog.Games.GroupBy(g => g.Group)) { <optgroup label="@group.Key">@foreach (var game in group) { <option value="@game.Id">@game.Name</option> }</optgroup> }</select></label>
         <label>Pokédex<select aria-label="Pokédex" @bind="newDex">@foreach (var d in AvailableDexes) { <option value="@d.Id">@d.Name (@d.Entries.Count entries)</option> }</select></label>
         <p class="muted">Checks belong to this tracker. You can create more trackers for the same Pokédex.</p>
@@ -234,6 +235,7 @@ else
     </form></dialog>
     <dialog id="action-dialog" aria-labelledby="action-title"><form @onsubmit="PerformAction" @onsubmit:preventDefault>
         <h2 id="action-title">@ActionTitle</h2>
+        @if (Store.Error is not null) { <p class="notice error" role="alert">@Store.Error</p> }
         @if (action == "rename") { <label>Name<input required maxlength="120" @bind="renameName" /></label> }
         else { <p><strong>@Selected?.State.Name</strong></p><p>@(action == "reset" ? "Clear every check in this tracker?" : "Delete this tracker and its checklist? This will also be applied to your folder when you synchronize.")</p><p class="muted">This action cannot be undone. You can export a backup first.</p> }
         <div class="dialog-actions"><button type="button" @onclick='async () => await Store.CloseDialogAsync("action-dialog")'>Cancel</button><button type="submit" class="@(action == "rename" ? "primary" : "danger")" disabled="@(Store.Busy || Store.EditingBlocked)">@ActionTitle</button></div>
@@ -383,7 +385,7 @@ else
         focusSourceHeading = info is null;
         info = species;
     }
-    private IEnumerable<GameDefinition> SourceGames(PokemonVariant species) => Store.Catalog.Games.Where(g => species.Sources.ContainsKey(g.Id) &&
+    private IEnumerable<GameDefinition> SourceGames(PokemonVariant species) => Store.Catalog.Games.Where(g => Selected is not null && species.SourceFor(g.Id, Store.Dex(Selected)) is not null &&
         (Selected?.State.GameId == "home" || g.Group == Store.Catalog.Games.SingleOrDefault(game => game.Id == Selected?.State.GameId)?.Group));
     private Task ChangeAccent(ChangeEventArgs args) => Store.SetAccentAsync(args.Value!.ToString()!);
     private Task ChangeTheme(ChangeEventArgs args) => Store.SetThemeAsync(args.Value!.ToString()!);
