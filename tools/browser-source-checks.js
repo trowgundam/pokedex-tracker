@@ -26,6 +26,7 @@ async function runPokedexSourceChecks() {
     await wait(() => document.querySelector('.source-location'));
     check(document.querySelector('.location-title').textContent === 'Coastal Biome' && count('Coastal Biome') === 69 && count('Canyon Biome') === 64, 'Blueberry locations rank by outstanding Pokémon count.');
     check([...document.querySelectorAll('.location-list .source-location')].every(row => row.dataset.game === 'scarlet'), 'Only the selected edition contributes locations.');
+    check(!document.querySelector('[data-area="Apple Hills"]') && !document.querySelector('[data-area="South Province Area Two"]'), 'Blueberry excludes locations from Kitakami and Paldea.');
     check(document.querySelector('.unlocated-sources .location-count').textContent === '74 unchecked' && document.querySelector('.unlocated-sources [data-pokemon="rhyperior"]'), 'Entries without locations remain accessible separately.');
     const coastal = document.querySelector('[data-area="Coastal Biome"]'); coastal.open = true;
     coastal.querySelector('[data-pokemon="deerling"] label').click();
@@ -43,6 +44,20 @@ async function runPokedexSourceChecks() {
     click('[aria-label="Mark Deerling"]'); await wait(() => document.querySelector('.progress-summary strong').textContent.trim().startsWith('0 ') && !document.querySelector('.create-tracker').disabled);
     view(true); await wait(() => count('Coastal Biome') === 69);
     check(count('Canyon Biome') === 64, 'Unchecking in the checklist restores all source counts.');
+    await create('scarlet', 'kitakami', ' Kitakami');
+    await wait(() => document.querySelector('[data-area="Apple Hills"]'));
+    check(!document.querySelector('[data-area="South Province Area Two"]') && !document.querySelector('[data-area="Coastal Biome"]'), 'Kitakami ranks only its own acquisition sources.');
+    document.querySelector('.source-pokemon-list [data-pokemon="pikachu"] .source-info').click();
+    await wait(() => document.querySelector('#info-title')?.textContent === 'Pikachu');
+    check(document.querySelector('#sources-panel').textContent.includes('Apple Hills') && !document.querySelector('#sources-panel').textContent.includes('South Province Area Two'), 'The information panel uses the same Kitakami scope as the ranking.');
+    click('[aria-label="Close sources"]'); await wait(() => !document.querySelector('#sources-panel'));
+    document.querySelector('.unlocated-sources [data-pokemon="tauros"] .source-info').click();
+    await wait(() => document.querySelector('#info-title')?.textContent === 'Tauros');
+    check(document.querySelector('#sources-panel').textContent.includes('Breed Paldean Tauros in Kitakami') && !document.querySelector('#sources-panel').textContent.includes('Savanna Biome'), 'Kitakami Tauros shows breeding rather than a Blueberry encounter.');
+    click('[aria-label="Close sources"]'); await wait(() => !document.querySelector('#sources-panel'));
+    await create('scarlet', 'paldea', ' Paldea');
+    await wait(() => document.querySelector('[data-area="South Province Area Two"]'));
+    check(!document.querySelector('[data-area="Apple Hills"]') && !document.querySelector('[data-area="Coastal Biome"]'), 'Paldea excludes DLC locations.');
     await create('home', 'national', ' National');
     await wait(() => document.querySelector('.source-overview'));
     check(document.querySelector('.source-counts').textContent.includes('games'), 'National sources report games.');
@@ -65,7 +80,7 @@ async function runPokedexSourceChecks() {
     scarlet.querySelector('[data-pokemon="perrserker"] label').click();
     await wait(() => Number(document.querySelector('.source-location[data-game="scarlet"] .location-count').textContent.split(' ')[0]) === initial - 1 && !document.querySelector('.create-tracker').disabled);
     check(!document.querySelector('.source-pokemon-list [data-pokemon="perrserker"]'), 'National counts include evolution-only species and update across games.');
-    for (const suffix of [' Blueberry', ' National']) {
+    for (const suffix of [' Blueberry', ' Kitakami', ' Paldea', ' National']) {
         [...document.querySelectorAll('.tracker-item')].find(button => button.querySelector('strong').textContent === name + suffix).click();
         await wait(() => document.querySelector('main h1')?.textContent === name + suffix && !document.querySelector('.create-tracker').disabled);
         document.querySelector('.tracker-actions').open = true; click('.tracker-actions button:nth-child(4)');

@@ -37,6 +37,7 @@ A folder save confirms local filesystem storage, not delivery to another device.
 ```sh
 dotnet build pokedex_tracker.slnx
 dotnet run --project tools/Checks -- .
+node --test tools/preferences-checks.mjs
 node --check pokedex_tracker/wwwroot/app.js
 node --check pokedex_tracker/wwwroot/layout.js
 node --check tools/browser-checks.js
@@ -47,11 +48,12 @@ node --check tools/browser-theme-checks.js
 dotnet workload install wasm-tools
 dotnet publish pokedex_tracker -c Release -o artifacts/publish
 dotnet run --project tools/Publish -- artifacts/publish/wwwroot /pokedex-tracker/
+node tools/browser-ci.mjs artifacts/publish/wwwroot /pokedex-tracker/
 ```
 
-Serve the prepared output beneath the same `/pokedex-tracker/` path when testing locally. The publish tool updates the base URL and service-worker integrity metadata together. The release service worker caches the app, catalog, and sprites so a successful first visit supports offline reopening. Development builds deliberately do not cache.
+The browser runner requires Node 22 or later and an installed Chrome or Chromium executable. Set `CHROME_BIN` if the runner cannot find the browser. It serves the prepared output beneath the specified base path and uses a disposable browser profile. Run local UI checks in the Arch KDE VM unless you explicitly choose another environment. The publish tool updates the base URL and service-worker integrity metadata together. The release service worker caches the app, catalog, and sprites so a successful first visit supports offline reopening. Development builds deliberately do not cache.
 
-The [Pages workflow](.github/workflows/pages.yml) validates and deploys `main` to GitHub Pages. Set the repository's Pages source to **GitHub Actions**. Pull requests run three independent checks: **Catalog and tracker checks**, **JavaScript syntax**, and **Release publish**. Release publication verifies every offline asset hash after preparing the repository path. Deployment waits for all checks to pass and runs only for `main`; PRs never deploy. Keep these check names stable because branch protection requires them. See [contribution requirements](CONTRIBUTING.md) for the `main` branch rules.
+The [Pages workflow](.github/workflows/pages.yml) validates and deploys `main` to GitHub Pages. Set the repository's Pages source to **GitHub Actions**. Pull requests run three independent checks: **Catalog and tracker checks**, **JavaScript syntax**, and **Release publish**. These checks execute the catalog, scraper, tracker-store, and preference tests. Release publication verifies every offline asset hash and executes the browser suite against the prepared app, including phone layout, Dex-specific sources, navigation, folder sync, storage failures, and offline reopening. Deployment waits for all checks to pass and runs only for `main`; PRs never deploy. Keep these check names stable because branch protection requires them. See [contribution requirements](CONTRIBUTING.md) for the `main` branch rules.
 
 The [browser filesystem checks](tools/browser-checks.js) run in a disposable local preview origin's console. They use real IndexedDB and file handles in OPFS, substituting only the operating-system directory picker. They do not prove a particular browser's native picker or external Syncthing delivery.
 
@@ -62,6 +64,8 @@ The [interface checks](tools/browser-ui-checks.js) drive real Blazor DOM events 
 The [catalog interface checks](tools/browser-catalog-checks.js) create trackers to verify native counts, exact Scarlet and Violet extras, DLC boundaries, acquisition links, numbered event entries, and the unrestricted cross-game National list. They remove their own trackers afterward.
 
 The [theme checks](tools/browser-theme-checks.js) exercise both visual themes and all color schemes across every edition. They check all 14 Catppuccin accents, navigation, neutral fallback, saved accent choices, and text and primary-action contrast.
+
+Acquisition records belong to a game and a regional or DLC Dex. Both the Sources ranking and information panel select records for the active Dex. Complete trackers combine their component Dexes; National trackers combine the applicable regional records. Scope follows the required content, so a Crown Tundra quest remains a Crown source even when its encounter happens on another map. Records without a listed location remain available separately.
 
 ## Appearance
 

@@ -59,7 +59,7 @@ export async function saveLocal(content) {
                 transaction.oncomplete = () => { localRevision++; resolve(); };
                 transaction.onabort = transaction.onerror = () => reject(new Error(conflict
                     ? 'Another tab changed your trackers. Reload this tab before editing to protect those changes.'
-                    : 'Could not save on this device. Your changes are still visible; export a backup before closing.'));
+                    : 'Could not save on this device. Your previously saved progress is unchanged.'));
             });
         } finally { db.close(); }
     });
@@ -190,22 +190,28 @@ export async function commitFolder(id, expected, name, content) {
 export function setColorScheme(scheme) {
     document.documentElement.dataset.colorScheme = scheme;
     // Retain the original key so existing Auto/Light/Dark preferences survive.
-    localStorage.setItem('pokedex-theme', scheme);
+    return savePreference('pokedex-theme', scheme);
 }
 export function getColorScheme() {
-    const stored = localStorage.getItem('pokedex-theme');
+    const stored = readPreference('pokedex-theme');
     return ['system', 'light', 'dark'].includes(stored) ? stored : 'system';
 }
 export function setThemeChoice(theme) {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem('pokedex-appearance', theme);
+    return savePreference('pokedex-appearance', theme);
 }
 export function getThemeChoice() {
-    const theme = localStorage.getItem('pokedex-appearance');
+    const theme = readPreference('pokedex-appearance');
     return theme === 'game' ? 'normal' : theme ?? 'catppuccin';
 }
-export function getThemeAccent(theme) { return localStorage.getItem('pokedex-accent-' + theme); }
-export function setThemeAccent(theme, accent) { localStorage.setItem('pokedex-accent-' + theme, accent); }
+export function getThemeAccent(theme) { return readPreference('pokedex-accent-' + theme); }
+export function setThemeAccent(theme, accent) { return savePreference('pokedex-accent-' + theme, accent); }
+function readPreference(key) {
+    try { return localStorage.getItem(key); } catch { return null; }
+}
+function savePreference(key, value) {
+    try { localStorage.setItem(key, value); return true; } catch { return false; }
+}
 export function applyAppearance(theme, scheme, gameId, accent) {
     const root = document.documentElement;
     root.dataset.theme = theme;

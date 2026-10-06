@@ -5,15 +5,17 @@ public sealed record AcquisitionOverview(List<RankedLocation> Locations, List<Po
 
 public static class AcquisitionRanking
 {
-    public static AcquisitionOverview Build(IEnumerable<PokemonVariant> outstanding, string gameId)
+    public static AcquisitionOverview Build(IEnumerable<PokemonVariant> outstanding, string gameId, DexDefinition dex)
     {
         var remaining = outstanding.DistinctBy(p => p.Id).ToList();
-        var located = remaining.SelectMany(p => p.Sources
-            .Where(source => gameId == "home" || source.Key == gameId)
-            .SelectMany(source => gameId == "home"
-                ? [(GameId: source.Key, Area: (string?)null, Pokemon: p)]
-                : source.Value.Areas.Where(area => !string.IsNullOrWhiteSpace(area))
-                    .Select(area => (GameId: source.Key, Area: (string?)area.Trim(), Pokemon: p)))).ToList();
+        var located = remaining.SelectMany(p => p.Sources.Keys
+            .Where(id => gameId == "home" || id == gameId)
+            .Select(id => (GameId: id, Source: p.SourceFor(id, dex)))
+            .Where(item => item.Source is not null)
+            .SelectMany(item => gameId == "home"
+                ? [(item.GameId, Area: (string?)null, Pokemon: p)]
+                : item.Source!.Areas.Where(area => !string.IsNullOrWhiteSpace(area))
+                    .Select(area => (item.GameId, Area: (string?)area.Trim(), Pokemon: p)))).ToList();
         var locations = located.GroupBy(item => (item.GameId, item.Area))
             .Select(group => new RankedLocation(group.Key.GameId, group.Key.Area,
                 group.Select(item => item.Pokemon).DistinctBy(p => p.Id).ToList()))
