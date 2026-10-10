@@ -20,9 +20,12 @@ string dataCache = Path.Combine(cache, "pokeapi", dataCommit);
 string spriteCache = Path.Combine(cache, "sprites", spriteCommit);
 Directory.CreateDirectory(dataCache);
 Directory.CreateDirectory(spriteCache);
-foreach (string name in new[] { "pokemon", "pokemon_species", "pokemon_species_names", "pokemon_dex_numbers", "pokemon_forms", "pokemon_evolution", "item_names", "move_names", "type_names" })
+bool evolutionMode = args.Any(arg => arg is "--evolutions-only" or "--audit-evolutions" or "--verify-evolutions");
+string[] tables = ["pokemon", "pokemon_species", "pokemon_forms", "pokemon_evolution", "item_names", "move_names", "type_names"];
+if (!evolutionMode) tables = [..tables, "pokemon_species_names", "pokemon_dex_numbers"];
+foreach (string name in tables)
     await Download($"https://raw.githubusercontent.com/PokeAPI/pokeapi/{dataCommit}/data/v2/csv/{name}.csv", Path.Combine(dataCache, name + ".csv"));
-if (args.Any(arg => arg is "--evolutions-only" or "--audit-evolutions" or "--verify-evolutions"))
+if (evolutionMode)
 {
     string catalogPath = Path.Combine(output, "data/catalog.json");
     Catalog existing = JsonSerializer.Deserialize<Catalog>(await File.ReadAllTextAsync(catalogPath), TrackerJson.Options)!;

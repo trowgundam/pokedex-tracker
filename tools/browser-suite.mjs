@@ -1,19 +1,31 @@
 import { readFile } from 'node:fs/promises';
 
 // The same plan drives CI's disposable browser and the collaborative preview.
-export async function browserSuite() {
+export const browserGroups = ['interface', 'appearance', 'sources', 'storage', 'navigation'];
+
+export async function browserSuite(group = 'all') {
+    if (group !== 'all' && !browserGroups.includes(group)) throw new Error('Unknown browser group: ' + group);
     const script = name => readFile(new URL(name, import.meta.url), 'utf8');
     const actions = [];
     const add = (name, kind, options = {}) => actions.push({ name, kind, ...options });
-    for (const [file, width] of [['browser-ui-checks.js', 1440], ['browser-ui-checks.js', 390], ['browser-catalog-checks.js', 1440], ['browser-theme-checks.js', 1440], ['browser-source-checks.js', 1440], ['browser-evolution-checks.js', 1440], ['browser-evolution-checks.js', 390], ['browser-sync-checks.js', 1440], ['browser-storage-checks.js', 1440], ['browser-checks.js', 1440]]) {
+    const scripts = [
+        ['browser-ui-checks.js', 1440, 'interface'], ['browser-ui-checks.js', 390, 'interface'],
+        ['browser-catalog-checks.js', 1440, 'sources'], ['browser-theme-checks.js', 1440, 'appearance'],
+        ['browser-source-checks.js', 1440, 'sources'], ['browser-evolution-checks.js', 1440, 'sources'], ['browser-evolution-checks.js', 390, 'sources'],
+        ['browser-sync-checks.js', 1440, 'storage'], ['browser-storage-checks.js', 1440, 'storage'], ['browser-checks.js', 1440, 'storage']
+    ];
+    for (const [file, width, category] of scripts) {
+        if (group !== 'all' && group !== category) continue;
         add(`Reset for ${file} at ${width}px`, 'reset');
         add(`Resize to ${width}px`, 'resize', { width, height: 900 });
         add(`${file} at ${width}px`, 'evaluate', { expression: (await script(file)).trim() });
     }
+    if (group !== 'all' && group !== 'navigation') return actions;
     const navigation = await script('browser-navigation-checks.js');
     const fixture = "JSON.parse(sessionStorage.getItem('checks-navigation'))";
     const check = (stage, args) => `${navigation}\nrunPokedexNavigationChecks(${JSON.stringify(stage)}, ${args})`;
     add('Reset for navigation', 'reset');
+    add('Resize to 1440px', 'resize', { width: 1440, height: 900 });
     add('Create navigation fixtures', 'evaluate', { expression: `${navigation}\n(async () => { const fixture = await runPokedexNavigationChecks('setup'); sessionStorage.setItem('checks-navigation', JSON.stringify(fixture)); return fixture; })()` });
     add('Reload remembers the last tracker', 'navigate');
     add('Verify remembered selection', 'evaluate', { expression: check('assert', `{name: ${fixture}.names[1], id: ${fixture}.ids[1]}`) });
@@ -35,6 +47,7 @@ export async function browserSuite() {
     add('Delete the renamed tracker', 'evaluate', { expression: check('delete', `{name: ${fixture}.names[0] + ' renamed', id: ${fixture}.ids[0]}`) });
     add('Delete the second tracker', 'evaluate', { expression: check('delete', `{name: ${fixture}.names[1], id: ${fixture}.ids[1]}`) });
     add('Reset for offline reopening', 'reset');
+    add('Resize to 1440px', 'resize', { width: 1440, height: 900 });
     add('Wait for the release offline cache', 'evaluate', { expression: `(async () => { await navigator.serviceWorker.ready; for (let i = 0; i < 600 && !navigator.serviceWorker.controller; i++) await new Promise(r => setTimeout(r, 100)); if (!navigator.serviceWorker.controller) throw new Error('The release service worker did not take control.'); return {cached: true}; })()` });
     add('Create offline fixtures', 'evaluate', { expression: `${navigation}\n(async () => {
         const fixture = await runPokedexNavigationChecks('setup');
@@ -66,4 +79,4 @@ export async function browserSuite() {
     return actions;
 }
 
-if (process.argv[1] === new URL(import.meta.url).pathname) console.log(JSON.stringify(await browserSuite()));
+if (process.argv[1] === new URL(import.meta.url).pathname) console.log(JSON.stringify(await browserSuite(process.argv[2])));
