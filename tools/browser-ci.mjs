@@ -9,6 +9,8 @@ import { browserSuite } from './browser-suite.mjs';
 
 const root = resolve(process.argv[2] ?? 'artifacts/publish/wwwroot');
 const basePath = process.argv[3] ?? '/pokedex-tracker/';
+const group = process.argv[4] ?? 'all';
+const actions = await browserSuite(group);
 if (!basePath.startsWith('/') || !basePath.endsWith('/')) throw new Error('Pass a base path with leading and trailing slashes.');
 const chromePath = process.env.CHROME_BIN ?? ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find(existsSync);
 if (!chromePath) throw new Error('Set CHROME_BIN to an installed Chromium or Chrome executable.');
@@ -31,6 +33,7 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 const url = origin + basePath;
 let chrome, cdp;
 let chromeLog = '';
+let currentAction = 'Start browser';
 
 try {
     chrome = spawn(chromePath, ['--headless=new', '--no-sandbox', '--disable-dev-shm-usage', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
@@ -67,7 +70,8 @@ try {
         }
         throw new Error('The app did not finish startup: ' + await evaluate('document.body.innerText.slice(0, 2000)'));
     };
-    for (const action of await browserSuite()) {
+    for (const action of actions) {
+        currentAction = action.name;
         console.log(action.name);
         switch (action.kind) {
             case 'reset':
@@ -92,8 +96,9 @@ try {
             default: throw new Error('Unknown browser action: ' + action.kind);
         }
     }
-    console.log('PASS: published browser behavior, navigation, folder sync, and offline reopening.');
+    console.log(`PASS: browser group ${group}.`);
 } catch (error) {
+    console.error(`FAIL: browser group ${group}, action ${currentAction}: ${error.message}`);
     if (cdp) {
         await mkdir('artifacts', { recursive: true });
         try {

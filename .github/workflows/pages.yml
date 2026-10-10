@@ -10,8 +10,27 @@ concurrency:
   group: pages-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  catalog:
-    name: Catalog and tracker checks
+  changes:
+    name: Change scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      application: ${{ steps.scope.outputs.application }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - name: Validate changed-file whitespace and classify scope
+        id: scope
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node tools/ci.mjs changes
+  build_checks:
+    name: Build check tools
+    needs: changes
+    if: needs.changes.outputs.application == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -19,60 +38,215 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
-      - name: Compile catalog generator
-        run: dotnet build tools/CatalogGenerator --configuration Release
-      - name: Verify evolution coverage and reproducibility
-        run: dotnet run --project tools/CatalogGenerator --configuration Release -- . --verify-evolutions
-      - name: Validate catalog and tracker behavior
-        run: dotnet run --project tools/Checks --configuration Release -- .
-  javascript:
-    name: JavaScript syntax
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('global.json', '**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+      - name: Compile checks and referenced generator once
+        run: node tools/ci.mjs run check-build dotnet build tools/Checks -c Release -bl:artifacts/check-build.binlog
+      - name: Collect runnable outputs
+        run: |
+          mkdir -p artifacts/check-tools/checks artifacts/check-tools/generator
+          cp -a tools/Checks/bin/Release/net10.0/. artifacts/check-tools/checks/
+          cp -a tools/CatalogGenerator/bin/Release/net10.0/. artifacts/check-tools/generator/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: check-tools
+          path: artifacts/check-tools
+          if-no-files-found: error
+          retention-days: 3
+      - name: Preserve failed-build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: check-build-diagnostics
+          path: |
+            artifacts/check-results
+            artifacts/check-build.binlog
+          retention-days: 7
+  dotnet_checks:
+    name: ${{ matrix.name }}
+    needs: [changes, build_checks]
+    if: needs.changes.outputs.application == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - category: catalog
+            name: Catalog data and rules
+          - category: generation
+            name: Catalog generation fixtures
+          - category: evolutions
+            name: Evolution reproducibility
+          - category: tracker
+            name: Tracker behavior
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: global.json
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: check-tools
+          path: artifacts/check-tools
+      - name: Cache pinned evolution inputs
+        if: matrix.category == 'evolutions'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: artifacts/catalog-cache/pokeapi
+          key: pokeapi-evolutions-${{ hashFiles('tools/CatalogGenerator/Program.cs') }}
+      - name: Run category without compiling
+        if: matrix.category != 'evolutions'
+        run: node tools/ci.mjs run "${{ matrix.category }}" dotnet artifacts/check-tools/checks/Checks.dll . --category "${{ matrix.category }}"
+      - name: Verify pinned-input evolution regeneration
+        if: matrix.category == 'evolutions'
+        run: node tools/ci.mjs run evolutions dotnet artifacts/check-tools/generator/CatalogGenerator.dll . --verify-evolutions
+      - name: Preserve category results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dotnet-${{ matrix.category }}-results
+          path: artifacts/check-results
+          retention-days: 7
+  catalog:
+    name: Catalog and tracker checks
+    needs: [changes, build_checks, dotnet_checks]
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - name: Check application and browser verification scripts
-        run: |
-          for script in pokedex_tracker/wwwroot/*.js tools/browser-*.js; do
-            node --check "$script"
-          done
-          for script in tools/*.mjs; do
-            node --check "$script"
-          done
-      - name: Check appearance preference behavior
-        run: node --test tools/preferences-checks.mjs
-  publish:
-    name: Release publish
+      - name: Require every catalog and tracker category
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: node tools/ci.mjs gate catalog build_checks dotnet_checks
+  javascript:
+    name: JavaScript syntax
+    needs: changes
+    if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '22'
+      - name: Validate scope
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: node tools/ci.mjs gate javascript
+      - name: Check syntax, preferences, and CI policy
+        if: needs.changes.outputs.application == 'true'
+        run: node tools/ci.mjs run javascript node tools/javascript-checks.mjs
+      - name: Preserve JavaScript results
+        if: always() && needs.changes.outputs.application == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: javascript-results
+          path: artifacts/check-results
+          retention-days: 7
+  build_site:
+    name: Release build and cache
+    needs: changes
+    if: needs.changes.outputs.application == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
-      - name: Install WebAssembly build tools
-        run: dotnet workload install wasm-tools
-      - name: Publish standalone app
-        run: dotnet publish pokedex_tracker -c Release -o artifacts/publish
-      - name: Prepare repository path and offline cache
-        env:
-          REPOSITORY_NAME: ${{ github.event.repository.name }}
-        run: dotnet run --project tools/Publish -c Release -- artifacts/publish/wwwroot "/$REPOSITORY_NAME/"
-      - name: Verify published browser behavior and offline reopening
-        env:
-          REPOSITORY_NAME: ${{ github.event.repository.name }}
-        run: node tools/browser-ci.mjs artifacts/publish/wwwroot "/$REPOSITORY_NAME/"
-      - if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('global.json', '**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+      - name: Install WebAssembly build tools
+        run: node tools/ci.mjs run wasm-tools dotnet workload install wasm-tools
+      - name: Publish standalone app once
+        run: node tools/ci.mjs run release-build dotnet publish pokedex_tracker -c Release -o artifacts/publish -bl:artifacts/release-build.binlog
+      - name: Prepare repository path and verify offline cache
+        env:
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+        run: node tools/ci.mjs run offline-cache dotnet run --project tools/Publish -c Release -- artifacts/publish/wwwroot "/$REPOSITORY_NAME/"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: prepared-site
           path: artifacts/publish/wwwroot
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+      - name: Preserve release-build diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-build-results
+          path: |
+            artifacts/check-results
+            artifacts/release-build.binlog
+          retention-days: 7
+  browser:
+    name: Browser · ${{ matrix.name }}
+    needs: [changes, build_site]
+    if: needs.changes.outputs.application == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: interface
+            name: Interface
+          - group: appearance
+            name: Appearance
+          - group: sources
+            name: Sources and evolutions
+          - group: storage
+            name: Storage and sync
+          - group: navigation
+            name: Navigation and offline
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: prepared-site
+          path: artifacts/publish/wwwroot
+      - name: Verify category against the shared release
+        env:
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+        run: node tools/ci.mjs run "browser-${{ matrix.group }}" node tools/browser-ci.mjs artifacts/publish/wwwroot "/$REPOSITORY_NAME/" "${{ matrix.group }}"
+      - name: Preserve results and browser failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: browser-${{ matrix.group }}-results
+          path: |
+            artifacts/check-results
+            artifacts/browser-failure.png
+            artifacts/browser-failure.txt
+          retention-days: 7
+  publish:
+    name: Release publish
+    needs: [changes, build_site, browser]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Require the release build and every browser category
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: node tools/ci.mjs gate release build_site browser
   deploy:
     name: Deploy Pages
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: [catalog, javascript, publish]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.changes.outputs.application == 'true'
+    needs: [changes, catalog, javascript, publish]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -82,6 +256,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: prepared-site
+          path: artifacts/publish/wwwroot
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: artifacts/publish/wwwroot
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - name: Deploy
         id: deployment

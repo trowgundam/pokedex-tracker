@@ -4,7 +4,7 @@ using PokedexTracker.CatalogGenerator;
 
 static class EvolutionCoverageChecks
 {
-    public static int Run(Catalog catalog, string root)
+    public static int RunCatalog(Catalog catalog, string root)
     {
         int checks = 0;
         void Check(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); checks++; }
@@ -26,6 +26,13 @@ static class EvolutionCoverageChecks
                 Check(report.Paths.Any(p => p.GameId == pair.Key && p.FromId == edge.FromId && p.ToId == edge.ToId && p.Status == EvolutionCoverageStatus.Included),
                     "Every published edge is accounted for by the inventory.");
 
+        return checks;
+    }
+
+    public static int RunBuilder()
+    {
+        int checks = 0;
+        void Check(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); checks++; }
         // A small independent catalog lets these checks remove entire source rows,
         // invent a future condition, and add a future game without touching real data.
         var fixture = new Fixture();

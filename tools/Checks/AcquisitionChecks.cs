@@ -3,7 +3,7 @@ using PokedexTracker.Core;
 
 internal static class AcquisitionChecks
 {
-    public static int Run(Catalog catalog)
+    public static int RunFixtures()
     {
         int checks = 0;
         void Check(bool condition, string message)
@@ -75,6 +75,17 @@ internal static class AcquisitionChecks
         Check(AcquisitionExtractor.Extract(eventHtml, scarlet, pikachu, dexes, variants, "https://www.serebii.net/")["paldea"].Method == "Event" &&
             AcquisitionExtractor.Extract(eventHtml, scarlet, treecko, dexes, variants, "https://www.serebii.net/").Count == 0, "Numbered historical events remain, while event-only sources outside the numbered Dex are excluded.");
 
+        return checks;
+    }
+
+    public static int RunCatalog(Catalog catalog)
+    {
+        int checks = 0;
+        void Check(bool condition, string message)
+        {
+            if (!condition) throw new InvalidDataException(message);
+            checks++;
+        }
         DexDefinition CatalogDex(string id) => catalog.Dexes.Single(d => d.Id == id);
         PokemonVariant Pokemon(string id) => catalog.Pokemon.Single(p => p.Id == id);
         var actualPikachu = Pokemon("pikachu");
