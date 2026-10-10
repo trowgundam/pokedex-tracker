@@ -1,0 +1,497 @@
+[
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "farfetchd-galar",
+    "toId": "sirfetchd",
+    "requirement": "Land 3 critical hits in one battle",
+    "reason": "Reviewed Sword / Shield requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/swordshield/evolution.shtml",
+    "ruleFingerprint": "6aafa9f2d86b697f99fec9474d3cd4ed48bec42100a3cde9b7e2a8ceb4127d06"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "nincada",
+    "toId": "shedinja",
+    "requirement": "Level Nincada to 20 · have an empty party slot and a regular Poké Ball",
+    "reason": "Reviewed Sword / Shield requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/pokedex-swsh/shedinja/",
+    "ruleFingerprint": "a772297a2d6226e0371cd71df82fb99abdbc35de5cbbdcfe4aa14484037f1903"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "yamask-galar",
+    "toId": "runerigus",
+    "requirement": "Take at least 49 damage without fainting · walk under the stone arch in Dusty Bowl",
+    "reason": "Reviewed Sword / Shield requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/swordshield/evolution.shtml",
+    "ruleFingerprint": "2ebbb764be886fb93578d8c555f2a46cc31fd51d3c302c7258e14face3126a20"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "toxel",
+    "toId": "toxtricity",
+    "requirement": "Level 30 · original nature determines Amped or Low Key form · Mints do not change the form",
+    "reason": "Reviewed Sword / Shield requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/pokedex-sv/toxtricity/",
+    "ruleFingerprint": "39a9c45717e34e249ca5ebb41285e35e7f79b14cfe0d1512697a3c5d34d0edf2"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "milcery",
+    "toId": "alcremie",
+    "requirement": "Spin while holding a Sweet · Sweet, spin direction, duration and time determine form",
+    "reason": "Reviewed Sword / Shield requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/swordshield/evolution.shtml",
+    "ruleFingerprint": "95e078089f37f0694b01a0366927b7336d80fa31ed94fe6a0c836e70d2965f04"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "kubfu",
+    "toId": "urshifu",
+    "requirement": "Complete the Tower of Darkness or Tower of Waters with Kubfu · tower determines form",
+    "reason": "Reviewed Sword / Shield requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/swordshield/evolution.shtml",
+    "ruleFingerprint": "15d17257ff2655a9b3f95d9d964149e23c670ccbab60450f0230c208daf60ed5"
+  },
+  {
+    "gameGroup": "Brilliant Diamond / Shining Pearl",
+    "fromId": "magneton",
+    "toId": "magnezone",
+    "requirement": "Level up in Mt. Coronet",
+    "reason": "Reviewed Brilliant Diamond / Shining Pearl requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/brilliantdiamondshiningpearl/evolution.shtml",
+    "ruleFingerprint": "663f26207fe9b9c2e1366c4c18d94ab4f5c594490df356a5483f34168dbbf57a"
+  },
+  {
+    "gameGroup": "Brilliant Diamond / Shining Pearl",
+    "fromId": "eevee",
+    "toId": "glaceon",
+    "requirement": "Level up near the Ice Rock on Route 217",
+    "reason": "Reviewed Brilliant Diamond / Shining Pearl requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/brilliantdiamondshiningpearl/evolution.shtml",
+    "ruleFingerprint": "5100ac193b5ec4d0a6248df030c4f07df3f55a6f8b6a00a0b5e01fd353b92059"
+  },
+  {
+    "gameGroup": "Brilliant Diamond / Shining Pearl",
+    "fromId": "eevee",
+    "toId": "leafeon",
+    "requirement": "Level up near the Moss Rock in Eterna Forest",
+    "reason": "Reviewed Brilliant Diamond / Shining Pearl requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/brilliantdiamondshiningpearl/evolution.shtml",
+    "ruleFingerprint": "6e659429676346baa88ac2cae6b2d2c64aa8ed3d36b89268998f611b8bbedde1"
+  },
+  {
+    "gameGroup": "Brilliant Diamond / Shining Pearl",
+    "fromId": "wurmple",
+    "toId": "cascoon",
+    "requirement": "Level 7 · Wurmple's personality value determines Silcoon or Cascoon",
+    "reason": "Reviewed Brilliant Diamond / Shining Pearl requirement supplements or replaces the inherited source method.",
+    "source": "https://github.com/PokeAPI/pokeapi/blob/bc92d3b6029ef1abe9e7ad424c400b338f3c11fe/data/v2/csv/pokemon_evolution.csv",
+    "ruleFingerprint": "865ed3ff7d2a46b85d3596f507986df7d96cb65eade95d572d2a625adaf3fe68"
+  },
+  {
+    "gameGroup": "Brilliant Diamond / Shining Pearl",
+    "fromId": "wurmple",
+    "toId": "silcoon",
+    "requirement": "Level 7 · Wurmple's personality value determines Silcoon or Cascoon",
+    "reason": "Reviewed Brilliant Diamond / Shining Pearl requirement supplements or replaces the inherited source method.",
+    "source": "https://github.com/PokeAPI/pokeapi/blob/bc92d3b6029ef1abe9e7ad424c400b338f3c11fe/data/v2/csv/pokemon_evolution.csv",
+    "ruleFingerprint": "55bd9251ea9b5781ad87ddc85729c1626860f053fad43d04340d4f6684fea427"
+  },
+  {
+    "gameGroup": "Brilliant Diamond / Shining Pearl",
+    "fromId": "nincada",
+    "toId": "shedinja",
+    "requirement": "Level Nincada to 20 · have an empty party slot and a regular Poké Ball",
+    "reason": "Reviewed Brilliant Diamond / Shining Pearl requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/pokedex-swsh/shedinja/",
+    "ruleFingerprint": "a772297a2d6226e0371cd71df82fb99abdbc35de5cbbdcfe4aa14484037f1903"
+  },
+  {
+    "gameGroup": "Brilliant Diamond / Shining Pearl",
+    "fromId": "nosepass",
+    "toId": "probopass",
+    "requirement": "Level up in Mt. Coronet",
+    "reason": "Reviewed Brilliant Diamond / Shining Pearl requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/brilliantdiamondshiningpearl/evolution.shtml",
+    "ruleFingerprint": "8d4f09b5ba6f43ab1cbacd29f78352727e89b4865f5aa657aa2747bc07929e78"
+  },
+  {
+    "gameGroup": "Brilliant Diamond / Shining Pearl",
+    "fromId": "feebas",
+    "toId": "milotic",
+    "requirement": "Level up with Beauty at least 170",
+    "reason": "Reviewed Brilliant Diamond / Shining Pearl requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/brilliantdiamondshiningpearl/evolution.shtml",
+    "ruleFingerprint": "e0889df1d643d4b5e67d7002834497bda76f2b600e52b9d3c8db5c66c0d6f9f6"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "kadabra",
+    "toId": "alakazam",
+    "requirement": "Use Linking Cord or trade",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "c300e1b706ea0b0318267a4a1ac543638d5ec43677f049621d255796e54c7b0e"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "machoke",
+    "toId": "machamp",
+    "requirement": "Use Linking Cord or trade",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "6c22d43fefaa3202dbba503c2f8f462a29cd2ad919dbf2c5b70bcb76431b463f"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "graveler",
+    "toId": "golem",
+    "requirement": "Use Linking Cord or trade",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "4f07803feb788c72c81a87e19df176a0fd994d2aeb9a0ee9a27d7b708cda5c58"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "magneton",
+    "toId": "magnezone",
+    "requirement": "Use Thunder Stone or evolve in Coronet Highlands",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "663f26207fe9b9c2e1366c4c18d94ab4f5c594490df356a5483f34168dbbf57a"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "haunter",
+    "toId": "gengar",
+    "requirement": "Use Linking Cord or trade",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "b78fb3aaa78b79e3d0013cfb7d67db7260b674ef82471e58364acdefc79e3549"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "eevee",
+    "toId": "glaceon",
+    "requirement": "Use Ice Stone or evolve near the Ice Rock in Bonechill Wastes",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "5100ac193b5ec4d0a6248df030c4f07df3f55a6f8b6a00a0b5e01fd353b92059"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "eevee",
+    "toId": "leafeon",
+    "requirement": "Use Leaf Stone or evolve near the Moss Rock in The Heartwood",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "6e659429676346baa88ac2cae6b2d2c64aa8ed3d36b89268998f611b8bbedde1"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "eevee",
+    "toId": "sylveon",
+    "requirement": "Evolve · with high friendship · knowing a Fairy-type move",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "a8cf3e07f10905c306f1e752b774c27a0b18436ba46bb15574702c15f1c67c9f"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "wurmple",
+    "toId": "cascoon",
+    "requirement": "Level 7 · Wurmple's personality value determines Silcoon or Cascoon",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://github.com/PokeAPI/pokeapi/blob/bc92d3b6029ef1abe9e7ad424c400b338f3c11fe/data/v2/csv/pokemon_evolution.csv",
+    "ruleFingerprint": "865ed3ff7d2a46b85d3596f507986df7d96cb65eade95d572d2a625adaf3fe68"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "wurmple",
+    "toId": "silcoon",
+    "requirement": "Level 7 · Wurmple's personality value determines Silcoon or Cascoon",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://github.com/PokeAPI/pokeapi/blob/bc92d3b6029ef1abe9e7ad424c400b338f3c11fe/data/v2/csv/pokemon_evolution.csv",
+    "ruleFingerprint": "55bd9251ea9b5781ad87ddc85729c1626860f053fad43d04340d4f6684fea427"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "nosepass",
+    "toId": "probopass",
+    "requirement": "Use Thunder Stone or evolve in Coronet Highlands",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "8d4f09b5ba6f43ab1cbacd29f78352727e89b4865f5aa657aa2747bc07929e78"
+  },
+  {
+    "gameGroup": "Legends: Arceus",
+    "fromId": "basculin-white-striped",
+    "toId": "basculegion",
+    "requirement": "Take 294 recoil damage without fainting · then evolve · gender determines form",
+    "reason": "Reviewed Legends: Arceus requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/legendsarceus/evolution.shtml",
+    "ruleFingerprint": "6ab0ec741f3574f56c0f3b9d498090b9685763772a6d0f9a89ddf31f01a56dc9"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "dunsparce",
+    "toId": "dudunsparce",
+    "requirement": "Level up · knowing Hyper Drill · personality value determines segment count",
+    "reason": "Reviewed Scarlet / Violet requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/scarletviolet/evolution.shtml",
+    "ruleFingerprint": "b228c22811e64ce9507fba773ef2229d30a6160cd3217d41aef07829dffe9443"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "basculin-white-striped",
+    "toId": "basculegion",
+    "requirement": "Take 294 recoil damage without fainting · then level up · gender determines form",
+    "reason": "Reviewed Scarlet / Violet requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/scarletviolet/evolution.shtml",
+    "ruleFingerprint": "6ab0ec741f3574f56c0f3b9d498090b9685763772a6d0f9a89ddf31f01a56dc9"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "bisharp",
+    "toId": "kingambit",
+    "requirement": "Defeat 3 Bisharp holding a Leader's Crest in groups with Pawniard · then level up",
+    "reason": "Reviewed Scarlet / Violet requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/scarletviolet/evolution.shtml",
+    "ruleFingerprint": "85ca09289eeaacc34e6952baacc13865bcb7ad24c287f19febea9ca58fee567c"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "toxel",
+    "toId": "toxtricity",
+    "requirement": "Level 30 · original nature determines Amped or Low Key form · Mints do not change the form",
+    "reason": "Reviewed Scarlet / Violet requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/pokedex-sv/toxtricity/",
+    "ruleFingerprint": "39a9c45717e34e249ca5ebb41285e35e7f79b14cfe0d1512697a3c5d34d0edf2"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "milcery",
+    "toId": "alcremie",
+    "requirement": "Spin while holding a Sweet · Sweet, spin direction, duration and time determine form",
+    "reason": "Reviewed Scarlet / Violet requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/swordshield/evolution.shtml",
+    "ruleFingerprint": "95e078089f37f0694b01a0366927b7336d80fa31ed94fe6a0c836e70d2965f04"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "tandemaus",
+    "toId": "maushold",
+    "requirement": "Level 25 or higher in battle · personality value determines family size",
+    "reason": "Reviewed Scarlet / Violet requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/scarletviolet/evolution.shtml",
+    "ruleFingerprint": "0e324a7a6e7c26829712f53528edc19919319d8ee0f50c7f2982bec86975404a"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "gimmighoul",
+    "toId": "gholdengo",
+    "requirement": "Level up after collecting 999 Gimmighoul Coins",
+    "reason": "Reviewed Scarlet / Violet requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/scarletviolet/evolution.shtml",
+    "ruleFingerprint": "4465105568614600e8ce85bf82bc7fd89979314deec3f2744aa5ad3ff9d2aed2"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "farfetchd-galar",
+    "toId": "sirfetchd",
+    "requirement": "Land 3 critical hits in one battle",
+    "reason": "Reviewed Legends: Z-A requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/pokedex-sv/farfetch'd/",
+    "ruleFingerprint": "6aafa9f2d86b697f99fec9474d3cd4ed48bec42100a3cde9b7e2a8ceb4127d06"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "yamask-galar",
+    "toId": "runerigus",
+    "requirement": "Take at least 49 damage without fainting · walk under the bridge between Wild Zones 11 and 17",
+    "reason": "Reviewed Legends: Z-A requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/legendsz-a/evolution.shtml",
+    "ruleFingerprint": "2ebbb764be886fb93578d8c555f2a46cc31fd51d3c302c7258e14face3126a20"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "toxel",
+    "toId": "toxtricity",
+    "requirement": "Level 30 · original nature determines Amped or Low Key form · Mints do not change the form",
+    "reason": "Reviewed Legends: Z-A requirement supplements or replaces the inherited source method. Permanent cosmetic forms share one checklist identity; the requirement retains their alternatives or form conditions.",
+    "source": "https://www.serebii.net/pokedex-sv/toxtricity/",
+    "ruleFingerprint": "39a9c45717e34e249ca5ebb41285e35e7f79b14cfe0d1512697a3c5d34d0edf2"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "gimmighoul",
+    "toId": "gholdengo",
+    "requirement": "Evolve after collecting 999 Gimmighoul Coins",
+    "reason": "Reviewed Legends: Z-A requirement supplements or replaces the inherited source method.",
+    "source": "https://www.serebii.net/pokedex-sv/gholdengo/",
+    "ruleFingerprint": "4465105568614600e8ce85bf82bc7fd89979314deec3f2744aa5ad3ff9d2aed2"
+  },
+  {
+    "gameGroup": "Let's Go",
+    "fromId": "pikachu",
+    "toId": "raichu-alola",
+    "requirement": null,
+    "reason": "This regional result requires evolution in Alola. Native gifts, trades or encounters supply the evolved form locally.",
+    "source": "https://www.serebii.net/pokedex-swsh/raichu/",
+    "ruleFingerprint": "1f48541f0fe71703855685b45a5ee4b60fa6c6836dc6813021a6cc56696e70ef"
+  },
+  {
+    "gameGroup": "Let's Go",
+    "fromId": "exeggcute",
+    "toId": "exeggutor-alola",
+    "requirement": null,
+    "reason": "This regional result requires evolution in Alola. Native gifts, trades or encounters supply the evolved form locally.",
+    "source": "https://www.serebii.net/pokedex-swsh/exeggutor/",
+    "ruleFingerprint": "bafddc370578309868b992e5898c32aa3c5dacbade9b513d626fea759167a2ca"
+  },
+  {
+    "gameGroup": "Let's Go",
+    "fromId": "cubone",
+    "toId": "marowak-alola",
+    "requirement": null,
+    "reason": "This regional result requires evolution in Alola. Native gifts, trades or encounters supply the evolved form locally.",
+    "source": "https://www.serebii.net/pokedex-swsh/marowak/",
+    "ruleFingerprint": "4e7afafea09fa39aae3c1dcc7d6737b79c928a1f6762aa3fec67665d77429a61"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "pikachu",
+    "toId": "raichu-alola",
+    "requirement": null,
+    "reason": "This regional result requires evolution in Alola. Native gifts, trades or encounters supply the evolved form locally.",
+    "source": "https://www.serebii.net/pokedex-swsh/raichu/",
+    "ruleFingerprint": "1f48541f0fe71703855685b45a5ee4b60fa6c6836dc6813021a6cc56696e70ef"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "exeggcute",
+    "toId": "exeggutor-alola",
+    "requirement": null,
+    "reason": "This regional result requires evolution in Alola. Native gifts, trades or encounters supply the evolved form locally.",
+    "source": "https://www.serebii.net/pokedex-swsh/exeggutor/",
+    "ruleFingerprint": "bafddc370578309868b992e5898c32aa3c5dacbade9b513d626fea759167a2ca"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "cubone",
+    "toId": "marowak-alola",
+    "requirement": null,
+    "reason": "This regional result requires evolution in Alola. Native gifts, trades or encounters supply the evolved form locally.",
+    "source": "https://www.serebii.net/pokedex-swsh/marowak/",
+    "ruleFingerprint": "4e7afafea09fa39aae3c1dcc7d6737b79c928a1f6762aa3fec67665d77429a61"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "koffing",
+    "toId": "weezing",
+    "requirement": null,
+    "reason": "Local evolution produces the Galarian result. The ordinary evolved form is obtained separately.",
+    "source": "https://www.serebii.net/pokedex-swsh/weezing/",
+    "ruleFingerprint": "3ef6212080c88cb9309866166d38f8550b2614c99d1d39fc270b01cdead683ce"
+  },
+  {
+    "gameGroup": "Sword / Shield",
+    "fromId": "mime-jr",
+    "toId": "mr-mime",
+    "requirement": null,
+    "reason": "Local evolution produces the Galarian result. The ordinary evolved form is obtained separately.",
+    "source": "https://www.serebii.net/pokedex-swsh/mr.mime/",
+    "ruleFingerprint": "5acf9a8278a24563cd46b1aac29bc80add2a933eeef4b7c42c3613e8da4e72ec"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "scyther",
+    "toId": "kleavor",
+    "requirement": null,
+    "reason": "Black Augurite is not available locally. Native Kleavor encounters do not make this evolution available.",
+    "source": "https://www.serebii.net/pokedex-sv/kleavor/",
+    "ruleFingerprint": "7418e575052335f2f614042966a9a745e919547b04a8d40d132cda570c8df673"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "scyther",
+    "toId": "kleavor",
+    "requirement": null,
+    "reason": "Black Augurite is not available locally. Native Kleavor encounters do not make this evolution available.",
+    "source": "https://www.serebii.net/pokedex-sv/kleavor/",
+    "ruleFingerprint": "7418e575052335f2f614042966a9a745e919547b04a8d40d132cda570c8df673"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "ursaring",
+    "toId": "ursaluna",
+    "requirement": null,
+    "reason": "Peat Block is not available locally. Bloodmoon Ursaluna is a separate encounter.",
+    "source": "https://www.serebii.net/itemdex/peatblock.shtml",
+    "ruleFingerprint": "7758f6a05c12737ab334428c96dae98d08baeeefbe82e234df655162936ae444"
+  },
+  {
+    "gameGroup": "Scarlet / Violet",
+    "fromId": "exeggcute",
+    "toId": "exeggutor-alola",
+    "requirement": null,
+    "reason": "Alolan Exeggutor is caught in the Coastal Biome. Local evolution of Exeggcute produces ordinary Exeggutor.",
+    "source": "https://www.serebii.net/pokedex-sv/exeggutor/",
+    "ruleFingerprint": "bafddc370578309868b992e5898c32aa3c5dacbade9b513d626fea759167a2ca"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "bergmite",
+    "toId": "avalugg-hisui",
+    "requirement": null,
+    "reason": "Bergmite evolves into ordinary Avalugg here. Hisuian Avalugg is caught separately.",
+    "source": "https://www.serebii.net/pokedex-sv/avalugg/",
+    "ruleFingerprint": "7ffe1f560fd649dbc38e9f580f991ba15c0f1c60a7aaf7dc8e717a342959deb7"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "goomy",
+    "toId": "sliggoo-hisui",
+    "requirement": null,
+    "reason": "Goomy evolves into ordinary Sliggoo here. Hisuian Sliggoo is caught separately.",
+    "source": "https://www.serebii.net/pokedex-sv/sliggoo/",
+    "ruleFingerprint": "23d9c06cccd43e82202dce9740a7eaf67aaea245edaedbfbf82901b3496486f2"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "mime-jr",
+    "toId": "mr-mime-galar",
+    "requirement": null,
+    "reason": "Galarian Mr. Mime requires evolution in Galar. It is caught separately here.",
+    "source": "https://www.serebii.net/pokedex-sv/mr.mime/",
+    "ruleFingerprint": "e2c974071c98417e13b429382df3d32c7c4fe6de1f8216ec1b605a416c152892"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "pikachu",
+    "toId": "raichu-alola",
+    "requirement": null,
+    "reason": "Alolan Raichu requires evolution in Alola. It is obtained separately here.",
+    "source": "https://www.serebii.net/pokedex-sv/raichu/",
+    "ruleFingerprint": "1f48541f0fe71703855685b45a5ee4b60fa6c6836dc6813021a6cc56696e70ef"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "cubone",
+    "toId": "marowak-alola",
+    "requirement": null,
+    "reason": "Alolan Marowak requires evolution in Alola. It is caught separately here.",
+    "source": "https://www.serebii.net/pokedex-sv/marowak/",
+    "ruleFingerprint": "4e7afafea09fa39aae3c1dcc7d6737b79c928a1f6762aa3fec67665d77429a61"
+  },
+  {
+    "gameGroup": "Legends: Z-A",
+    "fromId": "meltan",
+    "toId": "melmetal",
+    "requirement": null,
+    "reason": "Meltan evolves only in Pokémon GO, using 400 Meltan Candy.",
+    "source": "https://www.serebii.net/pokedex-sv/melmetal/",
+    "ruleFingerprint": "4e98e55e7e7ee0dddf537f4c538b0ae388f0c67d1ba40d3d97cc3af049fff75c"
+  }
+]

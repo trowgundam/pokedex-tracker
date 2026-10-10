@@ -162,6 +162,10 @@ else
                 <section class="acquisition"><h3>@game.Name</h3>@if (source.Areas.Count > 0) { <p>@string.Join(", ", source.Areas)</p> }<p class="muted">@source.Method</p><a href="@source.Url" target="_blank" rel="noopener noreferrer">Details on Serebii ↗</a></section>
             }
             @if (!SourceGames(species).Any()) { <p>No route record is available for this selection.</p><a href="@($"https://www.serebii.net/pokedex-sv/{species.Id}/")" target="_blank" rel="noopener noreferrer">Details on Serebii</a> }
+            @foreach (var game in SourceGames(species).DistinctBy(g => g.Group))
+            {
+                <EvolutionFamily Catalog="Store.Catalog" Pokemon="Store.Pokemon" PokemonId="@species.Id" GameId="@game.Id" GameName="@game.Group" />
+            }
         </aside>
         }
     </div>

@@ -20,8 +20,34 @@ string dataCache = Path.Combine(cache, "pokeapi", dataCommit);
 string spriteCache = Path.Combine(cache, "sprites", spriteCommit);
 Directory.CreateDirectory(dataCache);
 Directory.CreateDirectory(spriteCache);
-foreach (string name in new[] { "pokemon", "pokemon_species", "pokemon_species_names", "pokemon_dex_numbers" })
+foreach (string name in new[] { "pokemon", "pokemon_species", "pokemon_species_names", "pokemon_dex_numbers", "pokemon_forms", "pokemon_evolution", "item_names", "move_names", "type_names" })
     await Download($"https://raw.githubusercontent.com/PokeAPI/pokeapi/{dataCommit}/data/v2/csv/{name}.csv", Path.Combine(dataCache, name + ".csv"));
+if (args.Any(arg => arg is "--evolutions-only" or "--audit-evolutions" or "--verify-evolutions"))
+{
+    string catalogPath = Path.Combine(output, "data/catalog.json");
+    Catalog existing = JsonSerializer.Deserialize<Catalog>(await File.ReadAllTextAsync(catalogPath), TrackerJson.Options)!;
+    var evolutionBuild = await BuildEvolutions(existing);
+    if (args.Contains("--audit-evolutions"))
+    {
+        Environment.ExitCode = evolutionBuild.Coverage.Complete ? 0 : 1;
+        return;
+    }
+    RequireComplete(evolutionBuild);
+    string reviewedCoverage = Path.Combine(root, "tools/CatalogGenerator/evolution-coverage.json");
+    if (args.Contains("--verify-evolutions"))
+    {
+        if (JsonSerializer.Serialize(existing.Evolutions, TrackerJson.Options) != JsonSerializer.Serialize(evolutionBuild.Evolutions, TrackerJson.Options) ||
+            !File.Exists(reviewedCoverage) || await File.ReadAllTextAsync(reviewedCoverage) != CoverageJson(evolutionBuild.Coverage))
+            throw new InvalidDataException("Evolution data or coverage is stale. Complete the coverage worklist and regenerate both files.");
+        Console.WriteLine("Evolution catalog and complete coverage inventory match regeneration.");
+        return;
+    }
+    await File.WriteAllTextAsync(reviewedCoverage, CoverageJson(evolutionBuild.Coverage));
+    existing = existing with { Evolutions = evolutionBuild.Evolutions };
+    await File.WriteAllTextAsync(catalogPath, JsonSerializer.Serialize(existing, TrackerJson.Options));
+    Console.WriteLine($"Evolution rules written: {existing.Evolutions.Values.Sum(edges => edges.Count)} game-specific rules.");
+    return;
+}
 Dictionary<int, string> serebiiSlugs = [];
 foreach (string era in new[] { "swsh", "sv" })
 {
@@ -237,6 +263,10 @@ foreach (var game in games.Where(g => g.Id != "home"))
             if (!pokemon[entry.PokemonId].Sources.TryGetValue(game.Id, out var records) || !records.Keys.Any(dex.SourceDexIds.Contains))
                 SetSource(game.Id, entry.PokemonId, dex.Id, [], "See Serebii for availability");
 Catalog catalog = new() { Version = "2026-10-06.1", Games = games, Pokemon = pokemon.Values.OrderBy(p => p.NationalNumber).ThenBy(p => p.Id).Select(p => p with { Sources = p.Sources.OrderBy(pair => pair.Key).ToDictionary(pair => pair.Key, pair => pair.Value) }).ToList(), Dexes = dexes };
+var fullEvolutionBuild = await BuildEvolutions(catalog);
+RequireComplete(fullEvolutionBuild);
+await File.WriteAllTextAsync(Path.Combine(root, "tools/CatalogGenerator/evolution-coverage.json"), CoverageJson(fullEvolutionBuild.Coverage));
+catalog = catalog with { Evolutions = fullEvolutionBuild.Evolutions };
 await File.WriteAllTextAsync(Path.Combine(output, "data/catalog.json"), JsonSerializer.Serialize(catalog, TrackerJson.Options));
 await Parallel.ForEachAsync(catalog.Pokemon, new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (p, _) =>
 {
@@ -246,6 +276,25 @@ await Parallel.ForEachAsync(catalog.Pokemon, new ParallelOptions { MaxDegreeOfPa
 });
 await File.WriteAllTextAsync(Path.Combine(output, "data/provenance.json"), JsonSerializer.Serialize(new { GeneratedUtc = DateTimeOffset.UtcNow, PokeApiCommit = dataCommit, SpritesCommit = spriteCommit, Sources = requests.Select(g => g.Key).Concat(availabilityPages).Concat(catalog.Pokemon.SelectMany(p => p.Sources.Values).SelectMany(sources => sources.Values).Select(source => source.Url)).Distinct().Order().ToArray() }, TrackerJson.Options));
 Console.WriteLine("Catalog and local sprites written.");
+
+string CoverageJson(EvolutionCoverageReport report) => JsonSerializer.Serialize(report, new JsonSerializerOptions(TrackerJson.Options) { WriteIndented = true });
+async Task<EvolutionBuildResult> BuildEvolutions(Catalog catalog)
+{
+    var decisions = JsonSerializer.Deserialize<List<EvolutionDecision>>(await File.ReadAllTextAsync(Path.Combine(root, "tools/CatalogGenerator/evolution-decisions.json")), TrackerJson.Options)!;
+    var result = EvolutionBuilder.Build(catalog, Csv, decisions, $"https://github.com/PokeAPI/pokeapi/blob/{dataCommit}/data/v2/csv/pokemon_evolution.csv");
+    string reportPath = Path.Combine(root, "artifacts/evolution-coverage.json");
+    await File.WriteAllTextAsync(reportPath, CoverageJson(result.Coverage));
+    Console.WriteLine($"Evolution inventory: {result.Coverage.Paths.Count(p => p.Status == EvolutionCoverageStatus.Included)} included, {result.Coverage.Paths.Count(p => p.Status == EvolutionCoverageStatus.Unavailable)} unavailable, {result.Coverage.Paths.Count(p => p.Status == EvolutionCoverageStatus.Unresolved)} unresolved. Report: {reportPath}");
+    foreach (string issue in result.Coverage.Issues) Console.WriteLine("RESEARCH: " + issue);
+    foreach (var path in result.Coverage.Paths.Where(p => p.Status == EvolutionCoverageStatus.Unresolved))
+        Console.WriteLine($"RESEARCH: {path.GameId}: {path.FromId} -> {path.ToId}: {path.Reason}");
+    return result;
+}
+void RequireComplete(EvolutionBuildResult result)
+{
+    if (!result.Coverage.Complete)
+        throw new InvalidDataException("Complete the evolution research worklist in artifacts/evolution-coverage.json, add the missing methods or cited decisions, and rerun. The existing catalog has not been replaced.");
+}
 
 int Number(string value) => int.Parse(value, CultureInfo.InvariantCulture);
 async Task<List<string>> ListedSpecies(string url, string era)

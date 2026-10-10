@@ -5,7 +5,7 @@ export async function browserSuite() {
     const script = name => readFile(new URL(name, import.meta.url), 'utf8');
     const actions = [];
     const add = (name, kind, options = {}) => actions.push({ name, kind, ...options });
-    for (const [file, width] of [['browser-ui-checks.js', 1440], ['browser-ui-checks.js', 390], ['browser-catalog-checks.js', 1440], ['browser-theme-checks.js', 1440], ['browser-source-checks.js', 1440], ['browser-sync-checks.js', 1440], ['browser-storage-checks.js', 1440], ['browser-checks.js', 1440]]) {
+    for (const [file, width] of [['browser-ui-checks.js', 1440], ['browser-ui-checks.js', 390], ['browser-catalog-checks.js', 1440], ['browser-theme-checks.js', 1440], ['browser-source-checks.js', 1440], ['browser-evolution-checks.js', 1440], ['browser-evolution-checks.js', 390], ['browser-sync-checks.js', 1440], ['browser-storage-checks.js', 1440], ['browser-checks.js', 1440]]) {
         add(`Reset for ${file} at ${width}px`, 'reset');
         add(`Resize to ${width}px`, 'resize', { width, height: 900 });
         add(`${file} at ${width}px`, 'evaluate', { expression: (await script(file)).trim() });

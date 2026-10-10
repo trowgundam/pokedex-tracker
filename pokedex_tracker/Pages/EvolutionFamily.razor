@@ -1,0 +1,30 @@
+@using PokedexTracker.Core
+
+@if (paths.Count > 0)
+{
+    <section class="evolution-family" aria-label="Evolution in @GameName" data-evolution-game="@GameId">
+        <h3>Evolution · @GameName</h3>
+        <p class="muted evolution-note">Verified paths for this game.</p>
+        @foreach (string root in paths.Select(p => p[0].FromId).Distinct())
+        {
+            <ol class="evolution-path">
+                <EvolutionBranch Pokemon="Pokemon" Edges="edges" PokemonId="@root" SelectedId="@PokemonId" />
+            </ol>
+        }
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired] public Catalog Catalog { get; set; } = null!;
+    [Parameter, EditorRequired] public IReadOnlyDictionary<string, PokemonVariant> Pokemon { get; set; } = null!;
+    [Parameter, EditorRequired] public string PokemonId { get; set; } = "";
+    [Parameter, EditorRequired] public string GameId { get; set; } = "";
+    [Parameter, EditorRequired] public string GameName { get; set; } = "";
+    private List<List<Evolution>> paths = [];
+    private List<Evolution> edges = [];
+    protected override void OnParametersSet()
+    {
+        paths = EvolutionTree.Paths(Catalog, GameId, PokemonId);
+        edges = paths.SelectMany(p => p).Distinct().ToList();
+    }
+}
