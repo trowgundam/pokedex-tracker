@@ -27,7 +27,7 @@ async function runPokedexSourceChecks() {
     check(document.querySelector('.location-title').textContent === 'Coastal Biome' && count('Coastal Biome') === 69 && count('Canyon Biome') === 64, 'Blueberry locations rank by outstanding Pokémon count.');
     check([...document.querySelectorAll('.location-list .source-location')].every(row => row.dataset.game === 'scarlet'), 'Only the selected edition contributes locations.');
     check(!document.querySelector('[data-area="Apple Hills"]') && !document.querySelector('[data-area="South Province Area Two"]'), 'Blueberry excludes locations from Kitakami and Paldea.');
-    check(document.querySelector('.unlocated-sources .location-count').textContent === '74 unchecked' && document.querySelector('.unlocated-sources [data-pokemon="rhyperior"]'), 'Entries without locations remain accessible separately.');
+    check(document.querySelector('.unlocated-sources .location-count').textContent === '60 unchecked' && document.querySelector('.unlocated-sources [data-pokemon="archaludon"]'), 'Entries without locations or raids remain accessible separately.');
     const coastal = document.querySelector('[data-area="Coastal Biome"]'); coastal.open = true;
     coastal.querySelector('[data-pokemon="deerling"] label').click();
     await wait(() => count('Coastal Biome') === 68 && count('Canyon Biome') === 63 && !document.querySelector('.create-tracker').disabled);
@@ -58,6 +58,28 @@ async function runPokedexSourceChecks() {
     await create('scarlet', 'paldea', ' Paldea');
     await wait(() => document.querySelector('[data-area="South Province Area Two"]'));
     check(!document.querySelector('[data-area="Apple Hills"]') && !document.querySelector('[data-area="Coastal Biome"]'), 'Paldea excludes DLC locations.');
+    const teraRaids = [...document.querySelectorAll('.raid-list .source-location')].filter(row => row.querySelector('[data-pokemon="pikachu"]'));
+    check(teraRaids.map(row => row.dataset.area).sort().join(',') === '2 Star Raid Battles,3 Star Raid Battles' && teraRaids.every(row => row.dataset.raid === 'Tera Raid Battles'), 'Pikachu appears in its two separate Tera Raid star groups.');
+    document.querySelector('.location-list [data-pokemon="pikachu"] .source-info').click();
+    await wait(() => document.querySelector('#info-title')?.textContent === 'Pikachu');
+    const scarletRaids = [...document.querySelectorAll('#sources-panel .acquisition')].find(section => section.querySelector('h3').textContent === 'Scarlet');
+    check([...scarletRaids.querySelectorAll('.raid-source a')].map(link => link.textContent).join(',') === '2 Star Raid Battles,3 Star Raid Battles', 'The information panel shows linked Tera Raid star ratings.');
+    click('[aria-label="Close sources"]'); await wait(() => !document.querySelector('#sources-panel'));
+    await create('legends-za', 'hyperspace', ' Hyperspace');
+    await wait(() => document.querySelector('[data-area="Electric (4 Star)"]'));
+    check(document.querySelector('[data-area="Electric (4 Star)"] [data-pokemon="raichu-alola"]') && document.querySelector('[data-area="Poison (5 Star)"] [data-pokemon="slowpoke-galar"]'), 'Hyperspace sources retain form-specific rift types and ratings.');
+    document.querySelector('[data-area="Poison (5 Star)"] [data-pokemon="slowpoke-galar"] .source-info').click();
+    await wait(() => document.querySelector('#info-title')?.textContent.includes('Slowpoke'));
+    check(document.querySelector('#sources-panel').textContent.includes('Poison (5 Star)') && document.querySelector('#sources-panel').textContent.includes('Psychic (3 Star)') && !document.querySelector('#sources-panel').textContent.includes('Water (3 Star)'), 'The Hyperspace information panel preserves the regional form\'s own rift details.');
+    click('[aria-label="Close sources"]'); await wait(() => !document.querySelector('#sources-panel'));
+    await create('sword', 'galar', ' Sword');
+    await wait(() => document.querySelector('.raid-list'));
+    check(document.documentElement.scrollWidth <= innerWidth, 'Raid groups fit the viewport without horizontal overflow.');
+    check(!document.querySelector('.location-list [data-area="Giant\'s Cap"] [data-pokemon="pikachu"]') && document.querySelector('.raid-list [data-area="Giant\'s Cap"] [data-pokemon="pikachu"]'), 'Max Raid Pikachu is separated from ordinary encounters in the same area.');
+    const maxRaid = document.querySelector('.raid-list [data-area="Giant\'s Cap"]'); maxRaid.open = true;
+    maxRaid.querySelector('[data-pokemon="pikachu"] label').click();
+    await wait(() => !document.querySelector('.source-pokemon-list [data-pokemon="pikachu"]') && !document.querySelector('.create-tracker').disabled);
+    check(!document.querySelector('.source-pokemon-list [data-pokemon="pikachu"]'), 'Checking a raid Pokémon removes it from every encounter and raid group.');
     await create('home', 'national', ' National');
     await wait(() => document.querySelector('.source-overview'));
     check(document.querySelector('.source-counts').textContent.includes('games'), 'National sources report games.');
@@ -80,7 +102,7 @@ async function runPokedexSourceChecks() {
     scarlet.querySelector('[data-pokemon="perrserker"] label').click();
     await wait(() => Number(document.querySelector('.source-location[data-game="scarlet"] .location-count').textContent.split(' ')[0]) === initial - 1 && !document.querySelector('.create-tracker').disabled);
     check(!document.querySelector('.source-pokemon-list [data-pokemon="perrserker"]'), 'National counts include evolution-only species and update across games.');
-    for (const suffix of [' Blueberry', ' Kitakami', ' Paldea', ' National']) {
+    for (const suffix of [' Blueberry', ' Kitakami', ' Paldea', ' Hyperspace', ' Sword', ' National']) {
         [...document.querySelectorAll('.tracker-item')].find(button => button.querySelector('strong').textContent === name + suffix).click();
         await wait(() => document.querySelector('main h1')?.textContent === name + suffix && !document.querySelector('.create-tracker').disabled);
         document.querySelector('.tracker-actions').open = true; click('.tracker-actions button:nth-child(4)');

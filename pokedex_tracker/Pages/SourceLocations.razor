@@ -3,18 +3,21 @@
 <section class="source-overview" aria-labelledby="source-overview-title">
     <h2 id="source-overview-title">Sources for unchecked Pokémon</h2>
     <p class="muted">@(Tracker.State.GameId == "home" ? "Games" : "Locations") with the most outstanding Pokémon appear first. Counts include listed availability; evolution, trades, raids, and unlocks may still be required. Open a Pokémon's sources for details.</p>
-    @if (overview.Locations.Count == 0 && overview.WithoutLocation.Count == 0)
+    @if (Outstanding.Count == 0)
     {
         <p class="notice" role="status">Everything in this tracker is checked. No outstanding sources.</p>
     }
     else
     {
-        <p class="source-counts" role="status">@overview.Locations.Count @(Tracker.State.GameId == "home" ? "games" : "locations") · @Outstanding.Count unchecked Pokémon</p>
-        <div class="location-list">
-            @foreach (var location in overview.Locations)
+        <p class="source-counts" role="status">@overview.Locations.Count @(Tracker.State.GameId == "home" ? "games" : "locations")@if (overview.Raids.Count > 0) { <text> · @overview.Raids.Count raid groups</text> } · @Outstanding.Count unchecked Pokémon</p>
+        @foreach (var group in new[] { (Raid: false, Locations: overview.Locations), (Raid: true, Locations: overview.Raids) }.Where(group => group.Locations.Count > 0))
+        {
+        @if (overview.Raids.Count > 0) { <h3>@(group.Raid ? "Raid battles" : "Locations")</h3> }
+        <div class="@(group.Raid ? "raid-list" : "location-list")">
+            @foreach (var location in group.Locations)
             {
-                <details @key="(location.GameId, location.Area)" class="source-location" data-game="@location.GameId" data-area="@location.Area">
-                    <summary><span class="location-title">@(location.Area ?? GameName(location.GameId))</span><span class="location-count">@location.Pokemon.Count unchecked</span></summary>
+                <details @key="(location.GameId, location.Area, location.RaidMethod)" class="source-location" data-game="@location.GameId" data-area="@location.Area" data-raid="@location.RaidMethod">
+                    <summary><span class="location-title">@(location.RaidMethod is null ? location.Area ?? GameName(location.GameId) : $"{location.RaidMethod}: {location.Area}")</span><span class="location-count">@location.Pokemon.Count unchecked</span></summary>
                     <ul class="source-pokemon-list">
                         @foreach (var p in location.Pokemon)
                         {
@@ -27,6 +30,7 @@
                 </details>
             }
         </div>
+        }
         @if (overview.WithoutLocation.Count > 0)
         {
             <details class="source-location unlocated-sources">

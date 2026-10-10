@@ -32,13 +32,17 @@ public sealed record PokemonVariant
     }
 }
 
+public sealed record RaidEncounter(string Method, string Detail, string Url);
+
 public sealed record AcquisitionSource(List<string> Areas, string Method, string Url)
 {
+    public List<RaidEncounter> Raids { get; init; } = [];
     public static AcquisitionSource Combine(IEnumerable<AcquisitionSource> sources)
     {
         var items = sources.ToList();
         return new(items.SelectMany(source => source.Areas).Distinct(StringComparer.Ordinal).ToList(),
-            string.Join(" / ", items.SelectMany(source => source.Method.Split(" / ")).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)), items[0].Url);
+            string.Join(" / ", items.SelectMany(source => source.Method.Split(" / ")).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)), items[0].Url)
+        { Raids = items.SelectMany(source => source.Raids).Distinct().ToList() };
     }
 }
 

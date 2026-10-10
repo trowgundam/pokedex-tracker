@@ -63,10 +63,10 @@ h3 { font-size: 15px; }
 .tracker-view { width: fit-content; margin-bottom: 20px; }
 .source-overview > .muted { max-width: 78ch; font-size: 13px; line-height: 20px; }
 .source-counts { font-size: 13px; color: var(--muted); margin: 20px 0 12px; }
-.location-list { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.location-list, .raid-list { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 .source-location { background: var(--mantle); }
-.location-list .source-location + .source-location { border-top: 1px solid var(--border); }
-.location-list .source-location:nth-child(even) { background: var(--base); }
+.location-list .source-location + .source-location, .raid-list .source-location + .source-location { border-top: 1px solid var(--border); }
+.location-list .source-location:nth-child(even), .raid-list .source-location:nth-child(even) { background: var(--base); }
 .source-location > summary { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 16px; }
 .source-location > summary::before { content: "▸"; flex-shrink: 0; color: var(--muted); }
 .source-location[open] > summary::before { content: "▾"; }
