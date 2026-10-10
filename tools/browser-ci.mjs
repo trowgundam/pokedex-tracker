@@ -119,7 +119,8 @@ try {
     }
     server.closeAllConnections();
     await new Promise(r => server.close(r));
-    await rm(profile, { recursive: true, force: true });
+    // Chrome helpers can finish writing the profile after the parent exits.
+    await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
 
 async function connect(url) {
