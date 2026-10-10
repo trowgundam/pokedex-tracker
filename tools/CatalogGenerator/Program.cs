@@ -202,7 +202,6 @@ foreach (string id in new[] { "vulpix-alola", "ninetales-alola" })
 foreach (var pair in new[] { ("raichu-alola", "Outside Quasartico Inc.", "In-game trade"), ("slowpoke-galar", "South Boulevard", "In-game trade"), ("stunfisk-galar", "Wild Zone 11", "Side Mission 72 reward") })
 {
     SetSource("legends-za", pair.Item1, "lumiose", [pair.Item2], pair.Item3);
-    SetSource("legends-za", pair.Item1, "hyperspace", ["Hyperspace Lumiose"], "Encounter");
 }
 foreach (string id in new[] { "slowbro-galar", "slowking-galar" })
     foreach (string scope in new[] { "lumiose", "hyperspace" })
@@ -259,6 +258,33 @@ foreach (var game in games.Where(g => g.Group == "Sword / Shield"))
         SetSource(game.Id, pair.Item1, "crown-tundra", [pair.Item2], "Crown Tundra quest: roaming encounter after Dyna Tree Hill");
     }
 }
+// Species pages combine some forms' raid ratings. The raid tables identify forms,
+// editions, and regions independently, after gift/trade overrides have run.
+string[] teraPages = Enumerable.Range(1, 6).Select(star => $"https://www.serebii.net/scarletviolet/teraraidbattles/{star}star.shtml").ToArray();
+foreach (var p in pokemon.Values)
+    foreach (string gameId in new[] { "scarlet", "violet" })
+        if (p.Sources.TryGetValue(gameId, out var sources))
+            foreach (string scope in sources.Keys.ToList())
+            {
+                var source = sources[scope];
+                if (source.Raids.Count == 0) continue;
+                string method = string.Join(" / ", source.Method.Split(" / ").Where(method => method != "Raid battles"));
+                sources[scope] = source with { Raids = [], Method = method.Length == 0 ? "See Serebii for availability" : method };
+            }
+for (int star = 1; star <= 6; star++)
+{
+    string url = teraPages[star - 1];
+    string path = Path.Combine(cache, TrackerJson.Hash(url) + ".html");
+    await Download(url, path);
+    foreach (var entry in TeraRaidExtractor.Extract(await File.ReadAllTextAsync(path, System.Text.Encoding.Latin1), pokemon.Values.ToList()))
+    {
+        var p = pokemon[entry.PokemonId];
+        if (!p.Sources.TryGetValue(entry.GameId, out var sources)) p.Sources[entry.GameId] = sources = [];
+        var source = sources.GetValueOrDefault(entry.Scope) ?? new([], "Raid battles", SourceUrl(games.Single(game => game.Id == entry.GameId), p));
+        string method = source.Method == "See Serebii for availability" ? "Raid battles" : string.Join(" / ", source.Method.Split(" / ").Append("Raid battles").Distinct().Order(StringComparer.Ordinal));
+        sources[entry.Scope] = source with { Method = method, Raids = [..source.Raids, new("Tera Raid Battles", $"{star} Star Raid Battles", url)] };
+    }
+}
 // Missing route data stays visible without borrowing another Dex's locations.
 foreach (var game in games.Where(g => g.Id != "home"))
     foreach (var dex in dexes.Where(d => d.Group == game.Group && d.SourceDexIds.Contains(d.Id)))
@@ -277,7 +303,7 @@ await Parallel.ForEachAsync(catalog.Pokemon, new ParallelOptions { MaxDegreeOfPa
     await Download($"https://raw.githubusercontent.com/PokeAPI/sprites/{spriteCommit}/sprites/pokemon/{p.SpriteId}.png", path);
     File.Copy(path, Path.Combine(output, "sprites", p.SpriteId + ".png"), overwrite: true);
 });
-await File.WriteAllTextAsync(Path.Combine(output, "data/provenance.json"), JsonSerializer.Serialize(new { GeneratedUtc = DateTimeOffset.UtcNow, PokeApiCommit = dataCommit, SpritesCommit = spriteCommit, Sources = requests.Select(g => g.Key).Concat(availabilityPages).Concat(catalog.Pokemon.SelectMany(p => p.Sources.Values).SelectMany(sources => sources.Values).Select(source => source.Url)).Distinct().Order().ToArray() }, TrackerJson.Options));
+await File.WriteAllTextAsync(Path.Combine(output, "data/provenance.json"), JsonSerializer.Serialize(new { GeneratedUtc = DateTimeOffset.UtcNow, PokeApiCommit = dataCommit, SpritesCommit = spriteCommit, Sources = requests.Select(g => g.Key).Concat(availabilityPages).Concat(teraPages).Concat(catalog.Pokemon.SelectMany(p => p.Sources.Values).SelectMany(sources => sources.Values).Select(source => source.Url)).Distinct().Order().ToArray() }, TrackerJson.Options));
 Console.WriteLine("Catalog and local sprites written.");
 
 string CoverageJson(EvolutionCoverageReport report) => JsonSerializer.Serialize(report, new JsonSerializerOptions(TrackerJson.Options) { WriteIndented = true });

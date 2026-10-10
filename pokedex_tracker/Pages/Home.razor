@@ -159,7 +159,12 @@ else
             @foreach (var game in SourceGames(species))
             {
                 var source = species.SourceFor(game.Id, Store.Dex(Selected!))!;
-                <section class="acquisition"><h3>@game.Name</h3>@if (source.Areas.Count > 0) { <p>@string.Join(", ", source.Areas)</p> }<p class="muted">@source.Method</p><a href="@source.Url" target="_blank" rel="noopener noreferrer">Details on Serebii ↗</a></section>
+                <section class="acquisition"><h3>@game.Name</h3>@if (source.Areas.Count > 0) { <p>@string.Join(", ", source.Areas)</p> }
+                    @foreach (var raidGroup in source.Raids.GroupBy(raid => raid.Method))
+                    {
+                        <div class="raid-source"><h4>@raidGroup.Key</h4><ul>@foreach (var raid in raidGroup) { <li><a href="@raid.Url" target="_blank" rel="noopener noreferrer">@raid.Detail</a></li> }</ul></div>
+                    }
+                    <p class="muted">@source.Method</p><a href="@source.Url" target="_blank" rel="noopener noreferrer">Details on Serebii ↗</a></section>
             }
             @if (!SourceGames(species).Any()) { <p>No route record is available for this selection.</p><a href="@($"https://www.serebii.net/pokedex-sv/{species.Id}/")" target="_blank" rel="noopener noreferrer">Details on Serebii</a> }
             @foreach (var game in SourceGames(species).DistinctBy(g => g.Group))

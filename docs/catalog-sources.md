@@ -98,7 +98,11 @@ Crown extras include [Max Lair encounters](https://www.serebii.net/swordshield/d
 - Regional Tauros Combat, Blaze, and Aqua breeds are supported. Cosmetic, gender, shiny, Mega, Gigantamax, and other temporary battle forms are excluded.
 - Extra entries have reviewed native sources. Transfer-only variants do not receive checklist entries or the ordinary form's encounter areas.
 
-Location extraction is limited to factual route/area names and short acquisition categories. Reviewed overrides cover regional gifts, trades, and cases where the source page omits a game record. Serebii links provide the detailed conditions. Edition exclusivity can require trades even when an area has a fixed encounter of another form; consult the linked source for exact conditions.
+Location extraction retains factual route/area names, Hyperspace rift types and star ratings, and short acquisition categories. Raid records retain the raid method, Tera Raid star label or Max Raid/Gigantamax area, and its source link. The Sources view ranks raids separately from ordinary encounter locations.
+
+Tera Raid records come from Serebii's permanent 1-star through 6-star raid tables. The tables identify forms, editions, and DLC regions independently of the species pages, which sometimes combine multiple forms' ratings. Generation rejects unknown identities, missing editions, and unparsed entries. It applies these records after gift/trade overrides, so overrides cannot erase native raids. Max Raid and Gigantamax area names come from the species location rows. Unlabelled Max Raid sections on pages with multiple forms apply to the scope's numbered native form. Event raid distributions are outside these permanent raid tables.
+
+Reviewed overrides cover regional gifts, trades, and cases where the source page omits a game record. Serebii links provide the detailed conditions. Edition exclusivity can require trades even when an area has a fixed encounter of another form; consult the linked source for exact conditions.
 
 National game sources also cover native Pokémon outside numbered regional checklists. The generator reads the Dynamax Adventure and Snacksworth encounter lists independently of checklist membership, plus reviewed gifts, breeding, and evolutions such as Poké Ball Plus Mew, Keldeo, Cosmog, Poipole, the Hoenn starters, and Urshifu. Tauros's Blaze and Aqua breeds have their own native-edition and paired-edition trade sources. These source records do not add entries to regional or combined checklists.
 
