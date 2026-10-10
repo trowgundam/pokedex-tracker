@@ -135,5 +135,7 @@ Check(nationalRanking.WithoutLocation.Count == 0, "National game availability do
 Check(AcquisitionRanking.Build([regional], "leafgreen", Dex("paldea")).WithoutLocation.Select(p => p.Id).SequenceEqual(["meowth-galar"]), "A location in another edition does not count for this edition.");
 Check(AcquisitionRanking.Build([], "scarlet", Dex("paldea")) is { Locations.Count: 0, WithoutLocation.Count: 0 }, "A completed tracker has no outstanding sources.");
 checks += AcquisitionChecks.Run(catalog);
+checks += EvolutionChecks.Run(catalog);
+checks += EvolutionCoverageChecks.Run(catalog, root);
 checks += await StoreChecks.Run(catalog);
 Console.WriteLine($"PASS: {checks} catalog and tracker behavior checks.");

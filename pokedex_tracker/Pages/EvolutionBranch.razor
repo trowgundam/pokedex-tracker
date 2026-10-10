@@ -1,0 +1,29 @@
+@using PokedexTracker.Core
+
+<li>
+    @if (Requirement is not null)
+    {
+        <p class="evolution-requirement"><span aria-hidden="true">↓</span> @Requirement</p>
+    }
+    <div class="evolution-pokemon @(PokemonId == SelectedId ? "selected" : "")" aria-current="@(PokemonId == SelectedId ? "true" : null)" data-evolution-pokemon="@PokemonId">
+        <img src="sprites/@(Pokemon[PokemonId].SpriteId).png" alt="" width="48" height="48" />
+        <span>@Pokemon[PokemonId].DisplayName</span>
+    </div>
+    @if (Edges.Any(e => e.FromId == PokemonId))
+    {
+        <ol class="evolution-children">
+            @foreach (var child in Edges.Where(e => e.FromId == PokemonId).GroupBy(e => e.ToId))
+            {
+                <EvolutionBranch Pokemon="Pokemon" Edges="Edges" PokemonId="@child.Key" SelectedId="@SelectedId" Requirement="@string.Join(" or ", child.Select(e => e.Requirement))" />
+            }
+        </ol>
+    }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyDictionary<string, PokemonVariant> Pokemon { get; set; } = null!;
+    [Parameter, EditorRequired] public List<Evolution> Edges { get; set; } = [];
+    [Parameter, EditorRequired] public string PokemonId { get; set; } = "";
+    [Parameter, EditorRequired] public string SelectedId { get; set; } = "";
+    [Parameter] public string? Requirement { get; set; }
+}

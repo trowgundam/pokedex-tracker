@@ -21,6 +21,8 @@ jobs:
           global-json-file: global.json
       - name: Compile catalog generator
         run: dotnet build tools/CatalogGenerator --configuration Release
+      - name: Verify evolution coverage and reproducibility
+        run: dotnet run --project tools/CatalogGenerator --configuration Release -- . --verify-evolutions
       - name: Validate catalog and tracker behavior
         run: dotnet run --project tools/Checks --configuration Release -- .
   javascript:

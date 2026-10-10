@@ -45,6 +45,7 @@ node --check tools/browser-sync-checks.js
 node --check tools/browser-ui-checks.js
 node --check tools/browser-catalog-checks.js
 node --check tools/browser-theme-checks.js
+node --check tools/browser-evolution-checks.js
 dotnet workload install wasm-tools
 dotnet publish pokedex_tracker -c Release -o artifacts/publish
 dotnet run --project tools/Publish -- artifacts/publish/wwwroot /pokedex-tracker/
@@ -69,6 +70,8 @@ Acquisition records belong to a game and a regional or DLC Dex. Both the Sources
 
 ## Appearance
 
+The Sources pane shows verified evolution families below acquisition details, with local sprites, names, and requirements. It highlights the selected Pokémon and keeps regional families separate. National trackers label trees by game family. Requirements cover special conditions and reviewed game-specific alternatives. Trees omit methods that require another game or region. The generator inventories native family paths before filtering source rules. Missing methods become a research worklist that must be completed before replacing the catalog. See [catalog sources](docs/catalog-sources.md) for the coverage policy.
+
 The tracker sidebar collapses to an Expand icon and a Settings gear. The browser remembers its collapsed state. Main boxes show position ranges such as `001-030`; Extra Forms keep their box labels. Unchecked sprites are grayscale. Checked cards have colored sprites, an accent-tinted background, and a stronger accent border. Acquisition information opens in a right-side panel that updates when you select another Pokémon.
 
 Settings separates **Theme**, **Accent color**, and **Color scheme**. Catppuccin uses Latte and Mocha and offers all 14 [official accent colors](https://github.com/catppuccin/palette/blob/main/palette.json). Normal uses neutral light and dark surfaces; its accent follows the displayed tracker's edition, with blue for the welcome screen and full National tracker. Auto follows the browser's color scheme, including changes while the app is open. Theme, accent, and color-scheme preferences stay on the device. Switching away from Catppuccin preserves its accent choice. Existing Game Specific preferences map to Normal.
@@ -81,6 +84,8 @@ To add a theme, register its ID, display name, and available accents in [Appeara
 dotnet run --project tools/CatalogGenerator -- .
 dotnet run --project tools/Checks -- .
 ```
+
+To update only evolution rules from the pinned PokéAPI CSV revision, run `dotnet run --project tools/CatalogGenerator -- . --evolutions-only`. This preserves checklist membership, acquisition records, sprites, and catalog version. The normal generator also includes this step. Use `--audit-evolutions` to collect the research worklist without replacing catalog data, and `--verify-evolutions` to check deterministic regeneration as CI does. See [evolution coverage and game onboarding](docs/catalog-sources.md#evolution-coverage-and-game-onboarding).
 
 The generator pins PokéAPI CSV and sprite revisions, caches downloaded source pages under ignored `artifacts/catalog-cache`, and extracts factual location names and acquisition categories. Clear that cache to refresh Serebii pages. Review native form mappings and game or DLC obtainability when adding a game. Neither species-level dex membership nor HOME compatibility proves local availability.
 

@@ -6,7 +6,10 @@ public sealed record Catalog
     public required List<GameDefinition> Games { get; init; }
     public required List<PokemonVariant> Pokemon { get; init; }
     public required List<DexDefinition> Dexes { get; init; }
+    public Dictionary<string, List<Evolution>> Evolutions { get; init; } = [];
 }
+
+public sealed record Evolution(string FromId, string ToId, string Requirement);
 
 public sealed record GameDefinition(string Id, string Name, string Group);
 

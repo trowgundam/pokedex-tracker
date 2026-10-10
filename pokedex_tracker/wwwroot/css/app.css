@@ -206,6 +206,15 @@ dialog input, dialog select { width: 100%; }
 .sources-panel .info-heading > div { min-width: 0; }
 .sources-panel h2, .sources-panel p, .sources-panel a { overflow-wrap: anywhere; }
 .sources-panel .acquisition a { display: inline-flex; align-items: center; min-height: 44px; }
+.evolution-family { border-top: 1px solid var(--border); padding: 16px 0; font-size: 14px; }
+.evolution-note { font-size: 12px; margin: 4px 0 8px; }
+.evolution-path { list-style: none; margin: 0; padding: 8px 0; }
+.evolution-path + .evolution-path { border-top: 1px solid var(--border); }
+.evolution-children { list-style: none; margin: 0 0 0 12px; padding: 0 0 0 8px; border-left: 1px solid var(--border); }
+.evolution-pokemon { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 4px 8px; border-radius: 4px; }
+.evolution-pokemon img { flex-shrink: 0; image-rendering: pixelated; }
+.evolution-pokemon.selected { background: var(--surface); color: var(--accent-ink); font-weight: 600; }
+.evolution-requirement { margin: 4px 8px; font-size: 12px; line-height: 18px; }
 @media (min-width: 720px) {
     @container (max-width: 700px) {
         .pokemon-box { padding: 12px; overflow-x: auto; }
